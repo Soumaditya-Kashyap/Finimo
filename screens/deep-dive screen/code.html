@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;family=Space+Grotesk:wght@600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#0A0A0C;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "inverse-on-surface": "#303034", "ghost-border": "rgba(255, 255, 255, 0.08)", "on-error": "#690005", "on-tertiary-container": "#007075", "tertiary-fixed-dim": "#00dce5", "on-tertiary-fixed-variant": "#004f53", "primary": "#ffffff", "outline-variant": "#444933", "surface-02": "#1C1C22", "on-secondary-fixed-variant": "#7200a3", "surface-tint": "#abd600", "outline": "#8e9379", "tertiary": "#ffffff", "error": "#ffb4ab", "surface-bright": "#39393d", "text-primary": "#FFFFFF", "purple-subtle": "#1F162B", "surface-container-low": "#1b1b1f", "primary-fixed": "#c3f400", "tertiary-container": "#63f7ff", "surface-variant": "#353439", "secondary": "#e9b3ff", "on-surface": "#e4e1e7", "on-primary": "#283500", "secondary-container": "#7d01b1", "surface": "#131317", "surface-01": "#141418", "surface-container-highest": "#353439", "secondary-fixed-dim": "#e9b3ff", "on-secondary-fixed": "#310048", "on-error-container": "#ffdad6", "error-container": "#93000a", "canvas-base": "#0A0A0C", "tertiary-fixed": "#63f7ff", "on-background": "#e4e1e7", "on-primary-container": "#556d00", "primary-fixed-dim": "#abd600", "lime-dim": "#A6CF00", "on-surface-variant": "#c4c9ac", "on-primary-fixed-variant": "#3c4d00", "on-secondary": "#510074", "on-tertiary": "#003739", "danger-coral": "#FF453A", "surface-dim": "#131317", "on-primary-fixed": "#161e00", "surface-container-high": "#2a292e", "on-tertiary-fixed": "#002021", "on-secondary-container": "#e5a9ff", "primary-container": "#c3f400", "inverse-primary": "#506600", "inverse-surface": "#e4e1e7", "background": "#131317", "surface-container-lowest": "#0e0e12", "surface-03": "#24242C", "secondary-fixed": "#f6d9ff", "text-muted": "#8E8E93", "surface-container": "#1f1f23" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "space-xl": "2rem", "margin": "1.5rem", "space-xs": "0.25rem", "space-lg": "1.5rem", "margin-mobile": "1rem", "gutter-mobile": "0.75rem", "gutter": "1rem", "space-md": "1rem", "space-sm": "0.5rem" }, "fontFamily": { "display-lg": ["Space Grotesk"], "headline-md": ["Space Grotesk"], "label-lg": ["Manrope"], "label-md": ["Manrope"], "headline-lg": ["Space Grotesk"], "body-lg": ["Manrope"], "display-lg-mobile": ["Space Grotesk"], "body-md": ["Manrope"], "body-sm": ["Manrope"], "label-sm": ["Manrope"], "headline-sm": ["Space Grotesk"], "display-md": ["Space Grotesk"], "display-md-mobile": ["Space Grotesk"] }, "fontSize": { "display-lg": ["56px", { "lineHeight": "64px", "letterSpacing": "-0.03em", "fontWeight": "700" }], "headline-md": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "label-lg": ["14px", { "lineHeight": "18px", "letterSpacing": "0.02em", "fontWeight": "600" }], "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.04em", "fontWeight": "500" }], "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "500" }], "display-lg-mobile": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.03em", "fontWeight": "700" }], "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" }], "body-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "400" }], "label-sm": ["10px", { "lineHeight": "14px", "letterSpacing": "0.08em", "fontWeight": "700" }], "headline-sm": ["18px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "600" }], "display-md": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.03em", "fontWeight": "600" }], "display-md-mobile": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "600" }] } } } }</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-canvas-base text-on-surface font-body-md text-body-md flex flex-col min-h-screen"><header class="fixed top-0 w-full z-50 bg-canvas-base/80 backdrop-blur-xl pt-safe"><div class="h-16 px-margin flex items-center justify-between"><div class="flex items-center gap-space-xs"><span class="font-headline-sm text-headline-sm text-text-primary tracking-tight font-bold">FINIMO</span><span class="w-2 h-2 rounded-full bg-primary-fixed shadow-[0_0_10px_#c3f400]"></span></div><div class="flex items-center gap-space-sm"><button aria-label="Notifications" class="w-11 h-11 flex items-center justify-center rounded-full text-text-muted hover:text-text-primary transition-colors"><span class="material-symbols-outlined text-[22px]">notifications</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-[0_0_12px_rgba(255,255,255,0.15)]"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex flex-col relative w-full pt-16 pb-[96px] bg-canvas-base min-h-screen"><div class="flex flex-col w-full px-margin-mobile space-y-space-lg">
+<!-- Sub-Header & Period Switcher -->
+<div class="flex items-center justify-between pt-space-xs">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-text-muted tracking-wider uppercase">Telemetry &amp; Audit</span>
+<h1 class="font-headline-md text-headline-md text-text-primary tracking-tight">Insights &amp; Burn Radar</h1>
+</div>
+<button aria-label="Select Period" class="flex items-center gap-space-xs px-space-md py-space-xs rounded-full bg-surface-02 text-on-surface shadow-sm hover:bg-surface-03 transition-colors">
+<span class="font-label-md text-label-md">October 2026</span>
+<span class="material-symbols-outlined text-[16px] text-text-muted">expand_more</span>
+</button>
+</div>
+<!-- Segmented View Toggle -->
+<div class="p-1 rounded-full bg-surface-01 flex items-center justify-between">
+<button class="w-1/2 py-2.5 rounded-full bg-primary-fixed text-on-primary font-label-md text-label-md text-center transition-all shadow-[0_2px_12px_rgba(195,244,0,0.25)] flex items-center justify-center gap-1.5" id="btn-category-view" onclick="switchView('category')">
+<span class="material-symbols-outlined text-[16px]">donut_large</span>
+<span>Category View</span>
+</button>
+<button class="w-1/2 py-2.5 rounded-full text-text-muted font-label-md text-label-md text-center transition-all hover:text-text-primary flex items-center justify-center gap-1.5" id="btn-family-view" onclick="switchView('family')">
+<span class="material-symbols-outlined text-[16px]">group</span>
+<span>Family Member View</span>
+</button>
+</div>
+<!-- Category View (Default Active) -->
+<div class="flex flex-col space-y-space-lg transition-opacity duration-300" id="category-panel">
+<!-- Donut Chart Hero Card -->
+<div class="rounded-xl bg-surface-01 p-space-lg flex flex-col items-center justify-center relative overflow-hidden">
+<!-- Glow aura for kinetic depth -->
+<div class="absolute -top-12 -right-12 w-44 h-44 rounded-full bg-primary-fixed/10 blur-3xl pointer-events-none"></div>
+<div class="absolute -bottom-10 -left-10 w-44 h-44 rounded-full bg-secondary/10 blur-3xl pointer-events-none"></div>
+<div class="relative w-64 h-64 flex items-center justify-center my-2">
+<!-- SVG Donut Chart (Total circumference ~ 565.48 for r=90) -->
+<svg class="w-full h-full transform -rotate-90" viewbox="0 0 220 220">
+<!-- Background track -->
+<circle cx="110" cy="110" fill="none" r="88" stroke="#1C1C22" stroke-width="20"></circle>
+<!-- Arc 1: Household 34% (Lime) - dash: 187.9, offset: 0 -->
+<circle class="transition-all duration-700" cx="110" cy="110" fill="none" r="88" stroke="#c3f400" stroke-dasharray="187.9 365" stroke-dashoffset="0" stroke-linecap="round" stroke-width="20"></circle>
+<!-- Arc 2: EMIs 31% (Indigo/Purple) - dash: 171.3, offset: -191.9 -->
+<circle class="transition-all duration-700" cx="110" cy="110" fill="none" r="88" stroke="#e9b3ff" stroke-dasharray="171.3 381.6" stroke-dashoffset="-191.9" stroke-linecap="round" stroke-width="20"></circle>
+<!-- Arc 3: Festival 15% (Cyber Cyan) - dash: 82.9, offset: -367.2 -->
+<circle class="transition-all duration-700" cx="110" cy="110" fill="none" r="88" stroke="#63f7ff" stroke-dasharray="82.9 470" stroke-dashoffset="-367.2" stroke-linecap="round" stroke-width="20"></circle>
+<!-- Arc 4: Food & Dining 12% (Amber) - dash: 66.3, offset: -454.1 -->
+<circle class="transition-all duration-700" cx="110" cy="110" fill="none" r="88" stroke="#abd600" stroke-dasharray="66.3 486.6" stroke-dashoffset="-454.1" stroke-linecap="round" stroke-width="20"></circle>
+<!-- Arc 5: Medical & Health 8% (Coral) - dash: 44.2, offset: -524.4 -->
+<circle class="transition-all duration-700" cx="110" cy="110" fill="none" r="88" stroke="#FF453A" stroke-dasharray="44.2 508.7" stroke-dashoffset="-524.4" stroke-linecap="round" stroke-width="20"></circle>
+</svg>
+<!-- Centered Metric Inside Donut -->
+<div class="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+<span class="font-label-sm text-label-sm text-text-muted uppercase tracking-wider mb-0.5">Total Outflow</span>
+<span class="font-headline-lg text-headline-lg text-text-primary tracking-tight">₹58,281</span>
+<div class="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-surface-02">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-fixed"></span>
+<span class="font-label-sm text-label-sm text-lime-dim">Radar Optimal</span>
+</div>
+</div>
+</div>
+<div class="w-full flex items-center justify-between pt-space-xs text-text-muted">
+<span class="font-body-sm text-body-sm">Paced at ₹1,879/day</span>
+<span class="font-label-sm text-label-sm text-primary-fixed uppercase tracking-wider">31 Days Monitored</span>
+</div>
+</div>
+<!-- Category Breakdown Ledger -->
+<div class="flex flex-col space-y-space-sm">
+<span class="font-label-sm text-label-sm text-text-muted uppercase tracking-wider px-1">Burn Categories</span>
+<!-- Category 1: Household -->
+<div class="p-space-md rounded-xl bg-surface-01 flex items-center justify-between hover:bg-surface-02 transition-colors">
+<div class="flex items-center gap-space-md min-w-0">
+<div class="w-10 h-10 rounded-full bg-primary-container/20 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[20px] text-primary-fixed">roofing</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-lg text-body-lg text-text-primary font-semibold truncate">Household &amp; Utilities</span>
+<span class="font-body-sm text-body-sm text-text-muted">34% of portfolio burn</span>
+</div>
+</div>
+<div class="flex flex-col items-end shrink-0 pl-2">
+<span class="font-headline-sm text-headline-sm text-text-primary">₹19,815</span>
+<span class="font-label-sm text-label-sm text-lime-dim">+4.2% vs Sep</span>
+</div>
+</div>
+<!-- Category 2: EMIs -->
+<div class="p-space-md rounded-xl bg-surface-01 flex items-center justify-between hover:bg-surface-02 transition-colors">
+<div class="flex items-center gap-space-md min-w-0">
+<div class="w-10 h-10 rounded-full bg-secondary-container/30 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[20px] text-secondary">payments</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-lg text-body-lg text-text-primary font-semibold truncate">Fixed EMIs &amp; Debt</span>
+<span class="font-body-sm text-body-sm text-text-muted">31% of portfolio burn</span>
+</div>
+</div>
+<div class="flex flex-col items-end shrink-0 pl-2">
+<span class="font-headline-sm text-headline-sm text-text-primary">₹18,067</span>
+<span class="font-label-sm text-label-sm text-text-muted">Locked schedule</span>
+</div>
+</div>
+<!-- Category 3: Festival -->
+<div class="p-space-md rounded-xl bg-surface-01 flex items-center justify-between hover:bg-surface-02 transition-colors">
+<div class="flex items-center gap-space-md min-w-0">
+<div class="w-10 h-10 rounded-full bg-tertiary-container/20 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[20px] text-tertiary-fixed">celebration</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-lg text-body-lg text-text-primary font-semibold truncate">Festival &amp; Festive Gifts</span>
+<span class="font-body-sm text-body-sm text-text-muted">15% of portfolio burn</span>
+</div>
+</div>
+<div class="flex flex-col items-end shrink-0 pl-2">
+<span class="font-headline-sm text-headline-sm text-text-primary">₹8,742</span>
+<span class="font-label-sm text-label-sm text-tertiary-fixed">Seasonal spike</span>
+</div>
+</div>
+<!-- Category 4: Food & Dining -->
+<div class="p-space-md rounded-xl bg-surface-01 flex items-center justify-between hover:bg-surface-02 transition-colors">
+<div class="flex items-center gap-space-md min-w-0">
+<div class="w-10 h-10 rounded-full bg-surface-02 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[20px] text-primary-fixed-dim">restaurant</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-lg text-body-lg text-text-primary font-semibold truncate">Food &amp; Gourmet Dining</span>
+<span class="font-body-sm text-body-sm text-text-muted">12% of portfolio burn</span>
+</div>
+</div>
+<div class="flex flex-col items-end shrink-0 pl-2">
+<span class="font-headline-sm text-headline-sm text-text-primary">₹6,993</span>
+<span class="font-label-sm text-label-sm text-lime-dim">-8.1% vs Sep</span>
+</div>
+</div>
+<!-- Category 5: Medical & Health -->
+<div class="p-space-md rounded-xl bg-surface-01 flex items-center justify-between hover:bg-surface-02 transition-colors">
+<div class="flex items-center gap-space-md min-w-0">
+<div class="w-10 h-10 rounded-full bg-danger-coral/20 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[20px] text-danger-coral">medical_services</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-lg text-body-lg text-text-primary font-semibold truncate">Medical &amp; Pharmacy</span>
+<span class="font-body-sm text-body-sm text-text-muted">8% of portfolio burn</span>
+</div>
+</div>
+<div class="flex flex-col items-end shrink-0 pl-2">
+<span class="font-headline-sm text-headline-sm text-text-primary">₹4,664</span>
+<span class="font-label-sm text-label-sm text-text-muted">Routine checkups</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Family Member View Section (Stacked Comparative Horizontal Bars) -->
+<div class="hidden flex flex-col space-y-space-lg transition-opacity duration-300" id="family-panel">
+<!-- Spend Attribution Card -->
+<div class="p-space-lg rounded-xl bg-surface-01 flex flex-col space-y-space-md">
+<div class="flex flex-col space-y-1">
+<span class="font-label-sm text-label-sm text-text-muted uppercase tracking-wider">Household Allocation</span>
+<h2 class="font-headline-sm text-headline-sm text-text-primary">Spend Attribution by Household Unit</h2>
+</div>
+<!-- Horizontal Multi-Segment Stacked Bar -->
+<div class="flex flex-col space-y-2 pt-2">
+<div class="w-full h-4 rounded-full bg-surface-02 overflow-hidden flex p-0.5 gap-0.5">
+<div class="h-full rounded-l-full bg-primary-fixed transition-all duration-700" style="width: 45%;"></div>
+<div class="h-full bg-secondary transition-all duration-700" style="width: 35%;"></div>
+<div class="h-full rounded-r-full bg-tertiary-fixed transition-all duration-700" style="width: 20%;"></div>
+</div>
+<div class="flex items-center justify-between font-label-sm text-label-sm text-text-muted pt-1">
+<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-primary-fixed"></span>Arpa (45%)</span>
+<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-secondary"></span>Chandrani (35%)</span>
+<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-tertiary-fixed"></span>Aryahi (20%)</span>
+</div>
+</div>
+</div>
+<!-- Member Micro-Cards -->
+<div class="flex flex-col space-y-space-sm">
+<!-- Member 1: Arpa -->
+<div class="p-space-md rounded-xl bg-surface-01 flex flex-col space-y-space-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-full bg-primary-fixed/20 flex items-center justify-center font-headline-sm text-headline-sm text-primary-fixed font-bold">A</div>
+<div class="flex flex-col">
+<span class="font-body-lg text-body-lg text-text-primary font-semibold">Arpa</span>
+<span class="font-label-sm text-label-sm text-text-muted uppercase tracking-wider">Admin • Primary Earner</span>
+</div>
+</div>
+<div class="text-right">
+<span class="font-headline-sm text-headline-sm text-text-primary">₹26,226</span>
+<span class="block font-label-sm text-label-sm text-primary-fixed">45% total spend</span>
+</div>
+</div>
+<!-- Individual Velocity Progress Track -->
+<div class="w-full bg-surface-02 h-2 rounded-full overflow-hidden">
+<div class="bg-primary-fixed h-full rounded-full" style="width: 72%;"></div>
+</div>
+<div class="flex justify-between items-center font-body-sm text-body-sm text-text-muted">
+<span>Targeted Cap: ₹36,500</span>
+<span class="text-lime-dim">₹10,274 buffer left</span>
+</div>
+</div>
+<!-- Member 2: Chandrani -->
+<div class="p-space-md rounded-xl bg-surface-01 flex flex-col space-y-space-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-full bg-secondary-container/40 flex items-center justify-center font-headline-sm text-headline-sm text-secondary font-bold">C</div>
+<div class="flex flex-col">
+<span class="font-body-lg text-body-lg text-text-primary font-semibold">Chandrani</span>
+<span class="font-label-sm text-label-sm text-text-muted uppercase tracking-wider">Co-Budgeter</span>
+</div>
+</div>
+<div class="text-right">
+<span class="font-headline-sm text-headline-sm text-text-primary">₹20,398</span>
+<span class="block font-label-sm text-label-sm text-secondary">35% total spend</span>
+</div>
+</div>
+<!-- Individual Velocity Progress Track -->
+<div class="w-full bg-surface-02 h-2 rounded-full overflow-hidden">
+<div class="bg-secondary h-full rounded-full" style="width: 81%;"></div>
+</div>
+<div class="flex justify-between items-center font-body-sm text-body-sm text-text-muted">
+<span>Targeted Cap: ₹25,000</span>
+<span class="text-secondary">₹4,602 buffer left</span>
+</div>
+</div>
+<!-- Member 3: Aryahi -->
+<div class="p-space-md rounded-xl bg-surface-01 flex flex-col space-y-space-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-full bg-tertiary-container/30 flex items-center justify-center font-headline-sm text-headline-sm text-tertiary-fixed font-bold">A</div>
+<div class="flex flex-col">
+<span class="font-body-lg text-body-lg text-text-primary font-semibold">Aryahi</span>
+<span class="font-label-sm text-label-sm text-text-muted uppercase tracking-wider">Dependent Minor</span>
+</div>
+</div>
+<div class="text-right">
+<span class="font-headline-sm text-headline-sm text-text-primary">₹11,657</span>
+<span class="block font-label-sm text-label-sm text-tertiary-fixed">20% total spend</span>
+</div>
+</div>
+<!-- Individual Velocity Progress Track -->
+<div class="w-full bg-surface-02 h-2 rounded-full overflow-hidden">
+<div class="bg-tertiary-fixed h-full rounded-full" style="width: 93%;"></div>
+</div>
+<div class="flex justify-between items-center font-body-sm text-body-sm text-text-muted">
+<span>Targeted Cap: ₹12,500</span>
+<span class="text-error">Near monthly ceiling</span>
+</div>
+</div>
+</div>
+</div>
+<!-- AI Micro-Signals Feed -->
+<div class="flex flex-col space-y-space-sm pt-space-xs">
+<div class="flex items-center justify-between px-1">
+<span class="font-label-sm text-label-sm text-text-muted uppercase tracking-wider">Predictive Telemetry &amp; AI</span>
+<span class="w-2 h-2 rounded-full bg-primary-fixed shadow-[0_0_8px_#c3f400]"></span>
+</div>
+<!-- Signal Card 1 -->
+<div class="p-space-md rounded-xl bg-surface-01 flex items-start gap-space-md hover:bg-surface-02 transition-all">
+<div class="w-9 h-9 rounded-full bg-surface-02 flex items-center justify-center text-[18px] shrink-0">
+        💡
+      </div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-body-lg text-body-lg text-text-primary font-semibold">OTT Optimization</span>
+<span class="px-1.5 py-0.5 rounded-full bg-surface-02 font-label-sm text-label-sm text-primary-fixed uppercase tracking-wider">Actionable</span>
+</div>
+<p class="font-body-sm text-body-sm text-text-muted mt-0.5">2 unused streaming subscriptions detected. Cancel to reserve ₹799/month into Liquid Vault.</p>
+</div>
+</div>
+<!-- Signal Card 2 -->
+<div class="p-space-md rounded-xl bg-surface-01 flex items-start gap-space-md hover:bg-surface-02 transition-all">
+<div class="w-9 h-9 rounded-full bg-primary-container/20 flex items-center justify-center text-[18px] shrink-0">
+        ⚡
+      </div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-body-lg text-body-lg text-text-primary font-semibold">Safe Spend Corridor</span>
+<span class="px-1.5 py-0.5 rounded-full bg-primary-container/30 font-label-sm text-label-sm text-primary-fixed uppercase tracking-wider">Runway +34d</span>
+</div>
+<p class="font-body-sm text-body-sm text-text-muted mt-0.5">Current burn rate yields ₹18,400 monthly surplus. On target to meet the Diwali reserve goal.</p>
+</div>
+</div>
+</div>
+</div>
+<script>
+  // Ensure the persistent bottom dock activates the Insights tab
+  (function initInsightsTab() {
+    const navLinks = document.querySelectorAll('nav a');
+    navLinks.forEach((link) => {
+      const path = link.getAttribute('data-path');
+      if (path === 'insights') {
+        link.classList.remove('text-text-muted');
+        link.classList.add('text-primary-fixed');
+      } else {
+        link.classList.remove('text-primary-fixed');
+        link.classList.add('text-text-muted');
+      }
+    });
+  })();
+
+  function switchView(view) {
+    const catPanel = document.getElementById('category-panel');
+    const famPanel = document.getElementById('family-panel');
+    const btnCat = document.getElementById('btn-category-view');
+    const btnFam = document.getElementById('btn-family-view');
+
+    if (view === 'category') {
+      catPanel.classList.remove('hidden');
+      famPanel.classList.add('hidden');
+
+      // Style category button active
+      btnCat.className = 'w-1/2 py-2.5 rounded-full bg-primary-fixed text-on-primary font-label-md text-label-md text-center transition-all shadow-[0_2px_12px_rgba(195,244,0,0.25)] flex items-center justify-center gap-1.5';
+      // Style family button inactive
+      btnFam.className = 'w-1/2 py-2.5 rounded-full text-text-muted font-label-md text-label-md text-center transition-all hover:text-text-primary flex items-center justify-center gap-1.5';
+    } else {
+      catPanel.classList.add('hidden');
+      famPanel.classList.remove('hidden');
+
+      // Style family button active
+      btnFam.className = 'w-1/2 py-2.5 rounded-full bg-primary-fixed text-on-primary font-label-md text-label-md text-center transition-all shadow-[0_2px_12px_rgba(195,244,0,0.25)] flex items-center justify-center gap-1.5';
+      // Style category button inactive
+      btnCat.className = 'w-1/2 py-2.5 rounded-full text-text-muted font-label-md text-label-md text-center transition-all hover:text-text-primary flex items-center justify-center gap-1.5';
+    }
+  }
+</script></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-canvas-base/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]" data-active-classes="text-primary-fixed"><div class="flex justify-around items-center h-20 px-gutter-mobile"><a class="flex flex-col items-center justify-center gap-space-xs w-16 h-14 text-text-muted hover:text-text-primary transition-all" data-path="status" href="#"><span class="material-symbols-outlined text-[24px]">dashboard</span><span class="font-label-sm text-label-sm uppercase">Status</span></a><a class="flex flex-col items-center justify-center gap-space-xs w-16 h-14 text-text-muted hover:text-text-primary transition-all" data-path="activity" href="#"><span class="material-symbols-outlined text-[24px]">swap_horiz</span><span class="font-label-sm text-label-sm uppercase">Activity</span></a><a class="flex flex-col items-center justify-center gap-space-xs w-16 h-14 text-text-muted hover:text-text-primary transition-all" data-path="targets" href="#"><span class="material-symbols-outlined text-[24px]">track_changes</span><span class="font-label-sm text-label-sm uppercase">Targets</span></a><a aria-current="page" class="flex flex-col items-center justify-center gap-space-xs w-16 h-14 transition-all text-primary-fixed" data-path="insights" href="#"><span class="material-symbols-outlined text-[24px]">insights</span><span class="font-label-sm text-label-sm uppercase">Insights</span></a></div></nav></body></html>

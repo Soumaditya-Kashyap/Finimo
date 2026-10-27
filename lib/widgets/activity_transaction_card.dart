@@ -1,0 +1,270 @@
+import 'package:flutter/material.dart';
+import '../models/ledger_transaction.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_typography.dart';
+import '../utils/currency_formatter.dart';
+
+class ActivityTransactionCard extends StatelessWidget {
+  final LedgerTransaction transaction;
+  final VoidCallback? onTap;
+
+  const ActivityTransactionCard({
+    super.key,
+    required this.transaction,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surface01,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.ghostBorder, width: 0.5),
+      ),
+      child: Column(
+        children: [
+          // Top Row: Icon + Title/Category + Amount/Time
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Icon Box
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.surface02,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  transaction.icon,
+                  color: transaction.isExpense
+                      ? AppColors.textPrimary
+                      : AppColors.primaryFixed,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+
+              // Title + Category
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      transaction.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.bodyLg(
+                        color: AppColors.textPrimary,
+                      ).copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      transaction.categoryName,
+                      style: AppTypography.bodySm(
+                        color: transaction.isExpense
+                            ? AppColors.textMuted
+                            : AppColors.primaryFixed,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Amount + Timestamp
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '${transaction.isExpense ? '-' : '+'}${CurrencyFormatter.formatInr(transaction.amount)}.00',
+                    style: AppTypography.headlineSm(
+                      color: transaction.isExpense
+                          ? AppColors.dangerCoral
+                          : AppColors.primaryFixed,
+                      fontWeight: FontWeight.w700,
+                    ).copyWith(
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    transaction.timeString,
+                    style: AppTypography.labelSm(
+                      color: AppColors.textMuted,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 10),
+
+          // Bottom Context Attribution Strip
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            decoration: BoxDecoration(
+              color: AppColors.surface02.withValues(alpha: 0.6),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Payer Avatar + Attribution Text
+                Expanded(
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 18,
+                        height: 18,
+                        decoration: BoxDecoration(
+                          color: transaction.payerInitial == 'C'
+                              ? AppColors.secondaryContainer.withValues(alpha: 0.5)
+                              : AppColors.primaryFixed.withValues(alpha: 0.25),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            transaction.payerInitial,
+                            style: TextStyle(
+                              color: transaction.payerInitial == 'C'
+                                  ? AppColors.secondary
+                                  : AppColors.primaryFixed,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: RichText(
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          text: TextSpan(
+                            style: AppTypography.labelSm(
+                              color: AppColors.textMuted,
+                              fontWeight: FontWeight.w500,
+                            ).copyWith(fontSize: 11),
+                            children: [
+                              TextSpan(
+                                text: transaction.isExpense ? 'Paid by ' : 'Received by ',
+                              ),
+                              TextSpan(
+                                text: transaction.payerName,
+                                style: const TextStyle(
+                                  color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const TextSpan(text: ' ➔ '),
+                              TextSpan(
+                                text: transaction.isExpense ? 'For ' : '',
+                              ),
+                              TextSpan(
+                                text: transaction.beneficiaryName,
+                                style: TextStyle(
+                                  color: transaction.isExpense
+                                      ? AppColors.textPrimary
+                                      : AppColors.primaryFixed,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Right Badge or Stacked Member Badges
+                if (transaction.isMultiBeneficiary)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildMiniAvatar('A', AppColors.primaryFixed, AppColors.canvasBase),
+                      Transform.translate(
+                        offset: const Offset(-4, 0),
+                        child: _buildMiniAvatar('C', AppColors.secondary, AppColors.canvasBase),
+                      ),
+                      Transform.translate(
+                        offset: const Offset(-8, 0),
+                        child: _buildMiniAvatar('AY', AppColors.tertiaryFixed, AppColors.canvasBase),
+                      ),
+                    ],
+                  )
+                else if (transaction.badgeText != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface03,
+                      borderRadius: BorderRadius.circular(9999),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (transaction.badgeColor != null) ...[
+                          Container(
+                            width: 5,
+                            height: 5,
+                            decoration: BoxDecoration(
+                              color: transaction.badgeColor,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                        ],
+                        Text(
+                          transaction.badgeText!,
+                          style: AppTypography.labelSm(
+                            color: transaction.badgeColor ?? AppColors.textMuted,
+                            fontWeight: FontWeight.w600,
+                          ).copyWith(
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      ),
+    );
+  }
+
+  Widget _buildMiniAvatar(String text, Color bg, Color textColor) {
+    return Container(
+      width: 16,
+      height: 16,
+      decoration: BoxDecoration(
+        color: bg,
+        shape: BoxShape.circle,
+        border: Border.all(color: AppColors.canvasBase, width: 1.5),
+      ),
+      child: Center(
+        child: Text(
+          text,
+          style: TextStyle(
+            color: textColor,
+            fontSize: 7.5,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+    );
+  }
+}
+

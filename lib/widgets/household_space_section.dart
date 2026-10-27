@@ -1,0 +1,295 @@
+import 'package:flutter/material.dart';
+import '../models/user_profile_data.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_typography.dart';
+
+class HouseholdSpaceSection extends StatelessWidget {
+  final UserProfileData profile;
+  final VoidCallback? onEditFamilyTap;
+  final VoidCallback? onAddMemberTap;
+
+  const HouseholdSpaceSection({
+    super.key,
+    required this.profile,
+    this.onEditFamilyTap,
+    this.onAddMemberTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section Header Row
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'ACTIVE HOUSEHOLD SPACE',
+              style: AppTypography.caption(
+                color: AppColors.textMuted,
+              ).copyWith(
+                fontSize: 11,
+                letterSpacing: 1.2,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            Text(
+              'GET /API/V1/FAMILY',
+              style: const TextStyle(
+                fontFamily: 'SpaceGrotesk',
+                color: AppColors.primaryFixed,
+                fontSize: 10,
+                letterSpacing: 0.8,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // Main Container wrapping the 3 cards
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface01,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.06),
+              width: 1,
+            ),
+          ),
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            children: [
+              // 1. Family Entity Row
+              _buildEntityTile(
+                icon: Icons.home_outlined,
+                label: 'FAMILY ENTITY',
+                value: profile.familyEntityName,
+                trailingAction: GestureDetector(
+                  onTap: onEditFamilyTap,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface03.withValues(alpha: 0.6),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.edit_outlined,
+                      size: 16,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              // 2. Locale & Ledger Basis Row
+              _buildEntityTile(
+                icon: Icons.public_outlined,
+                iconColor: AppColors.tertiaryFixed,
+                label: 'LOCALE & LEDGER BASIS',
+                value: profile.localeAndBasis,
+                trailingAction: const Padding(
+                  padding: EdgeInsets.all(8),
+                  child: Icon(
+                    Icons.lock_outline_rounded,
+                    size: 16,
+                    color: AppColors.textMuted,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              // 3. Access Scope Card with Single Mode tag & + Add Member button
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surface02,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.04),
+                  ),
+                ),
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: AppColors.surface03,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            Icons.groups_outlined,
+                            size: 20,
+                            color: AppColors.secondary,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'ACCESS SCOPE',
+                                style: AppTypography.caption(
+                                  color: AppColors.textMuted,
+                                ).copyWith(
+                                  fontSize: 10,
+                                  letterSpacing: 1.0,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                profile.accessScope,
+                                style: AppTypography.headlineSm(
+                                  color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.w700,
+                                ).copyWith(fontSize: 16),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Single Mode Tag
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.08),
+                            ),
+                          ),
+                          child: Text(
+                            profile.accessScopeBadge,
+                            style: AppTypography.caption(
+                              color: AppColors.textMuted,
+                            ).copyWith(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // + Add Member / Invite Later Button
+                    GestureDetector(
+                      onTap: onAddMemberTap,
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0F2B2E),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppColors.tertiaryFixedDim.withValues(alpha: 0.25),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.person_add_alt_outlined,
+                              size: 16,
+                              color: AppColors.tertiaryFixed,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '+ Add Member / Invite Later',
+                              style: AppTypography.bodySm(
+                                color: AppColors.tertiaryFixed,
+                              ).copyWith(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEntityTile({
+    required IconData icon,
+    Color iconColor = AppColors.textPrimary,
+    required String label,
+    required String value,
+    Widget? trailingAction,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface02,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.04),
+        ),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppColors.surface03,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              icon,
+              size: 20,
+              color: iconColor,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: AppTypography.caption(
+                    color: AppColors.textMuted,
+                  ).copyWith(
+                    fontSize: 10,
+                    letterSpacing: 1.0,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  value,
+                  style: AppTypography.headlineSm(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ).copyWith(fontSize: 16),
+                ),
+              ],
+            ),
+          ),
+          ?trailingAction,
+        ],
+      ),
+    );
+  }
+}
