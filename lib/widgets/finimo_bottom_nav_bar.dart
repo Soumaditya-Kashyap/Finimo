@@ -37,7 +37,7 @@ class FinimoBottomNavBar extends StatelessWidget {
             children: [
               _buildNavItem(
                 index: 0,
-                label: 'STATUS',
+                label: 'HOME',
                 icon: Icons.grid_view_rounded,
               ),
               _buildNavItem(
@@ -52,7 +52,7 @@ class FinimoBottomNavBar extends StatelessWidget {
               ),
               _buildNavItem(
                 index: 3,
-                label: 'DEEP DIVE',
+                label: 'INSIGHTS',
                 icon: Icons.insights_rounded,
               ),
             ],

@@ -179,7 +179,7 @@ class ProfileHeaderCard extends StatelessWidget {
 
           const SizedBox(height: 18),
 
-          // Bottom telemetry bar: SYNC STATE & SESSION NODE
+          // Bottom telemetry bar: ACCOUNT STATUS & DEVICE SESSION
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
@@ -191,13 +191,13 @@ class ProfileHeaderCard extends StatelessWidget {
             ),
             child: Row(
               children: [
-                // Sync State
+                // Account Status
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'SYNC STATE',
+                        'ACCOUNT STATUS',
                         style: AppTypography.caption(
                           color: AppColors.textMuted,
                         ).copyWith(
@@ -245,13 +245,13 @@ class ProfileHeaderCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 16),
 
-                // Session Node
+                // Device Session
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'SESSION NODE',
+                        'DEVICE SESSION',
                         style: AppTypography.caption(
                           color: AppColors.textMuted,
                         ).copyWith(

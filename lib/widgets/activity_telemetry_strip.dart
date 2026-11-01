@@ -44,7 +44,7 @@ class ActivityTelemetryStrip extends StatelessWidget {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    'TOTAL ACTIVITY • ${summary.totalCount} TRANSACTIONS',
+                    'THIS MONTH • ${summary.totalCount} TRANSACTIONS',
                     style: AppTypography.labelSm(
                       color: AppColors.textMuted,
                       fontWeight: FontWeight.w700,
@@ -69,7 +69,7 @@ class ActivityTelemetryStrip extends StatelessWidget {
 
           const SizedBox(height: 12),
 
-          // Middle Numbers Row: Outflow vs Inflow
+          // Middle Numbers Row: Expenses vs Income
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -78,7 +78,7 @@ class ActivityTelemetryStrip extends StatelessWidget {
                 textBaseline: TextBaseline.alphabetic,
                 children: [
                   Text(
-                    'Outflow',
+                    'Expenses',
                     style: AppTypography.bodySm(color: AppColors.textMuted),
                   ),
                   const SizedBox(width: 8),
@@ -101,7 +101,7 @@ class ActivityTelemetryStrip extends StatelessWidget {
                 textBaseline: TextBaseline.alphabetic,
                 children: [
                   Text(
-                    'Inflow',
+                    'Income',
                     style: AppTypography.bodySm(color: AppColors.textMuted),
                   ),
                   const SizedBox(width: 8),

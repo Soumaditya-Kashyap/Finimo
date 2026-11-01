@@ -109,7 +109,7 @@ class _ConjoinedEventDetailScreenState
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text(
-                              'Equity is calculated live against the household vault ledger',
+                              'Calculated live from member expenses in this event',
                             ),
                             duration: Duration(seconds: 1),
                           ),
@@ -137,7 +137,7 @@ class _ConjoinedEventDetailScreenState
                 ),
               ),
 
-              // Bottom Sticky Floating CTA: "+ Add Receipt to Event"
+              // Bottom Sticky Floating CTA: "+ Add Expense to Event"
               Positioned(
                 left: 16,
                 right: 16,
@@ -174,7 +174,7 @@ class _ConjoinedEventDetailScreenState
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Add Receipt to Event',
+                          'Add Expense to Event',
                           style: AppTypography.headlineSm(
                             color: Colors.black,
                             fontWeight: FontWeight.w800,

@@ -107,7 +107,7 @@ class _TargetsScreenState extends State<TargetsScreen> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Family financial runway',
+                          'Monthly budget & limits',
                           style: AppTypography.bodySm(color: AppColors.textMuted),
                         ),
                       ],
@@ -192,14 +192,14 @@ class _TargetsScreenState extends State<TargetsScreen> {
 
                 const SizedBox(height: 26),
 
-                // 4. Sinking Funds & Goals Section
+                // 4. Savings Goals & Events Section
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Row(
                       children: [
                         Text(
-                          'Sinking Funds & Goals',
+                          'Savings Goals & Events',
                           style: AppTypography.headlineSm(
                             color: AppColors.textPrimary,
                             fontWeight: FontWeight.w700,
@@ -229,7 +229,7 @@ class _TargetsScreenState extends State<TargetsScreen> {
                     InkWell(
                       onTap: widget.onSeeLedgerTap,
                       child: Text(
-                        'SEE LEDGER',
+                        'VIEW ALL',
                         style: AppTypography.labelSm(
                           color: AppColors.secondary,
                           fontWeight: FontWeight.w700,

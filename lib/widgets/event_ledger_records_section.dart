@@ -19,14 +19,14 @@ class EventLedgerRecordsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Section Header: Ledger Records [5 Items] ... Sort Date ▾
+        // Section Header: Event Expenses [5 Items] ... Sort Date ▾
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Row(
               children: [
                 Text(
-                  'Ledger Records',
+                  'Event Expenses',
                   style: AppTypography.headlineSm(
                     color: AppColors.textPrimary,
                     fontWeight: FontWeight.w700,
@@ -94,6 +94,23 @@ class EventLedgerRecordsSection extends StatelessWidget {
     );
   }
 
+  static IconData _resolveCategoryIcon(int code) {
+    switch (code) {
+      case 0xe1af:
+        return Icons.checkroom;
+      case 0xe5ef:
+        return Icons.temple_hindu;
+      case 0xe56c:
+        return Icons.restaurant;
+      case 0xe3ab:
+        return Icons.local_offer;
+      case 0xe8e6:
+        return Icons.local_florist;
+      default:
+        return Icons.receipt_long;
+    }
+  }
+
   Widget _buildRecordCard(EventLedgerRecord record) {
     final payerColor = Color(record.paidByColorValue);
 
@@ -125,7 +142,7 @@ class EventLedgerRecordsSection extends StatelessWidget {
               ),
             ),
             child: Icon(
-              IconData(record.categoryIconCode, fontFamily: 'MaterialIcons'),
+              _resolveCategoryIcon(record.categoryIconCode),
               color: record.isCreditInflow
                   ? AppColors.primaryFixed
                   : (record.paidByColorValue == 0xFFBF5AF2

@@ -243,7 +243,7 @@ class MockHomeRepository implements HomeRepository {
         currentSpent: 14200.00,
         percentageUsed: 71.0,
         statusText: '₹5,800 buffer',
-        footerStatus: 'Stable outflow velocity',
+        footerStatus: 'Spending within limit',
         accentColor: Color(0xFFC3F400), // Electric Lime
         icon: Icons.roofing_outlined,
       ),
@@ -254,7 +254,7 @@ class MockHomeRepository implements HomeRepository {
         currentSpent: 3850.00,
         percentageUsed: 77.0,
         statusText: '₹1,150 left',
-        footerStatus: 'Watch spend pace',
+        footerStatus: 'Spending quickly',
         accentColor: Color(0xFFFF453A), // Danger Coral
         icon: Icons.restaurant_outlined,
         isWarning: true,
@@ -307,7 +307,7 @@ class MockHomeRepository implements HomeRepository {
     // TODO: Replace with live API call to GET /api/v1/insights/summary
     return const DeepDiveSummaryData(
       totalOutflow: 58281.00,
-      statusLabel: 'Radar Optimal',
+      statusLabel: 'Under Budget',
       dailyPace: 1879.00,
       daysMonitored: 31,
       categories: [
@@ -403,12 +403,12 @@ class MockHomeRepository implements HomeRepository {
       roleBadge: 'ADMIN / OWNER',
       isVerified: true,
       finimoId: '#8841',
-      syncState: 'Live Core',
-      sessionNode: 'Mobile · In-Auth',
+      syncState: 'Active',
+      sessionNode: 'Mobile App',
       familyEntityName: 'Roy Family',
       localeAndBasis: 'INR (₹) · Asia/Kolkata',
-      accessScope: '1 Active Member',
-      accessScopeBadge: 'Single Mode',
+      accessScope: '1 Member',
+      accessScopeBadge: 'Primary Admin',
       biometricSecurityEnabled: true,
       appVersion: 'FINIMO v1.0.0',
       appPhase: '(Phase 1 MVP)',
@@ -421,8 +421,8 @@ class MockHomeRepository implements HomeRepository {
     return const ConjoinedEventDetail(
       id: 'event_durga_puja_2026',
       eventTitle: 'Durga Puja 2026',
-      poolTag: 'CONJOINED EVENT POOL',
-      poolSubtype: 'SHARED SINKING FUND',
+      poolTag: 'EVENT BUDGET',
+      poolSubtype: 'SHARED OCCASION',
       totalSunkVolume: 8672.00,
       budgetCap: 10000.00,
       spentPercentage: 86.7,
@@ -494,7 +494,7 @@ class MockHomeRepository implements HomeRepository {
           id: 'rec_discount',
           title: 'Discount Adjustment',
           dateString: 'Store Cashback',
-          categoryTag: 'CREDIT INFLOW · Promotional',
+          categoryTag: 'CASHBACK · Promotional',
           amount: 50.00,
           isCreditInflow: true,
           paidByOrRecipient: 'Store Cashback',

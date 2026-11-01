@@ -129,7 +129,7 @@ class _AnimatedDonutChartHeroState extends State<AnimatedDonutChartHero>
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              'TOTAL OUTFLOW',
+                              'TOTAL EXPENSES',
                               style: AppTypography.labelSm(
                                 color: AppColors.textMuted,
                                 fontWeight: FontWeight.w700,
@@ -204,11 +204,11 @@ class _AnimatedDonutChartHeroState extends State<AnimatedDonutChartHero>
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Paced at ${CurrencyFormatter.formatInr(widget.data.dailyPace)}/day',
+                    'Average ${CurrencyFormatter.formatInr(widget.data.dailyPace)}/day',
                     style: AppTypography.bodySm(color: AppColors.textMuted),
                   ),
                   Text(
-                    '${widget.data.daysMonitored} DAYS MONITORED',
+                    '${widget.data.daysMonitored} DAYS RECORDED',
                     style: AppTypography.labelSm(
                       color: AppColors.primaryFixed,
                       fontWeight: FontWeight.w700,

@@ -25,7 +25,7 @@ class HouseholdSpaceSection extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'ACTIVE HOUSEHOLD SPACE',
+              'FAMILY SETTINGS',
               style: AppTypography.caption(
                 color: AppColors.textMuted,
               ).copyWith(
@@ -35,7 +35,7 @@ class HouseholdSpaceSection extends StatelessWidget {
               ),
             ),
             Text(
-              'GET /API/V1/FAMILY',
+              'FINIMO CIRCLE',
               style: const TextStyle(
                 fontFamily: 'SpaceGrotesk',
                 color: AppColors.primaryFixed,
@@ -61,10 +61,10 @@ class HouseholdSpaceSection extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           child: Column(
             children: [
-              // 1. Family Entity Row
+              // 1. Family Name Row
               _buildEntityTile(
                 icon: Icons.home_outlined,
-                label: 'FAMILY ENTITY',
+                label: 'FAMILY NAME',
                 value: profile.familyEntityName,
                 trailingAction: GestureDetector(
                   onTap: onEditFamilyTap,
@@ -85,11 +85,11 @@ class HouseholdSpaceSection extends StatelessWidget {
 
               const SizedBox(height: 10),
 
-              // 2. Locale & Ledger Basis Row
+              // 2. Currency & Timezone Row
               _buildEntityTile(
                 icon: Icons.public_outlined,
                 iconColor: AppColors.tertiaryFixed,
-                label: 'LOCALE & LEDGER BASIS',
+                label: 'CURRENCY & TIMEZONE',
                 value: profile.localeAndBasis,
                 trailingAction: const Padding(
                   padding: EdgeInsets.all(8),
@@ -136,7 +136,7 @@ class HouseholdSpaceSection extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'ACCESS SCOPE',
+                                'FAMILY ACCESS',
                                 style: AppTypography.caption(
                                   color: AppColors.textMuted,
                                 ).copyWith(
@@ -184,7 +184,7 @@ class HouseholdSpaceSection extends StatelessWidget {
 
                     const SizedBox(height: 12),
 
-                    // + Add Member / Invite Later Button
+                    // + Add Family Member Button
                     GestureDetector(
                       onTap: onAddMemberTap,
                       child: Container(
@@ -208,7 +208,7 @@ class HouseholdSpaceSection extends StatelessWidget {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              '+ Add Member / Invite Later',
+                              '+ Add Family Member',
                               style: AppTypography.bodySm(
                                 color: AppColors.tertiaryFixed,
                               ).copyWith(

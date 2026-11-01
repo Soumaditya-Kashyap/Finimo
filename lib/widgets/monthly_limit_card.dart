@@ -58,7 +58,7 @@ class MonthlyLimitCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${CurrencyFormatter.formatInr(item.limitCap)} Cap • ${CurrencyFormatter.formatInr(item.currentSpent)} spent',
+                        '${CurrencyFormatter.formatInr(item.limitCap)} Limit • ${CurrencyFormatter.formatInr(item.currentSpent)} spent',
                         style: AppTypography.bodySm(color: AppColors.textMuted),
                       ),
                     ],

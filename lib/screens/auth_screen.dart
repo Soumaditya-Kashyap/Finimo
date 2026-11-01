@@ -183,7 +183,7 @@ class _AuthScreenState extends State<AuthScreen> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Text(
-            'Welcome back. Access your personal &\nhousehold cashflow.',
+            'Welcome back. Access your personal &\nfamily finances.',
             textAlign: TextAlign.center,
             style: AppTypography.bodyMd(
               color: AppColors.textMuted,
@@ -329,7 +329,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     ),
                     const SizedBox(width: 8),
 
-                    // Label: Household Vault: The Roy F...
+                    // Label: Family Space: The Roy F...
                     Expanded(
                       child: RichText(
                         overflow: TextOverflow.ellipsis,
@@ -338,7 +338,7 @@ class _AuthScreenState extends State<AuthScreen> {
                             color: AppColors.textMuted,
                           ).copyWith(fontSize: 12),
                           children: const [
-                            TextSpan(text: 'Household Vault: '),
+                            TextSpan(text: 'Family Space: '),
                             TextSpan(
                               text: 'The Roy F...',
                               style: TextStyle(
@@ -522,7 +522,7 @@ class _AuthScreenState extends State<AuthScreen> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Hardware Enclave Encrypted',
+                              'Secure Biometric Login',
                               style: AppTypography.caption(
                                 color: AppColors.textMuted,
                               ).copyWith(fontSize: 11),
@@ -631,7 +631,7 @@ class _AuthScreenState extends State<AuthScreen> {
         const SizedBox(height: 6),
 
         Text(
-          'Set up your account and initial space.',
+          'Set up your family account.',
           style: AppTypography.bodyMd(
             color: AppColors.textMuted,
           ),
@@ -702,10 +702,10 @@ class _AuthScreenState extends State<AuthScreen> {
 
               const SizedBox(height: 18),
 
-              // 4. Family / Household Space Name
+              // 4. Family Name
               AuthTextField(
-                label: 'Family / Household Space Name',
-                rightLabel: 'PRIMARY LEDGER',
+                label: 'Family Name',
+                rightLabel: 'MAIN ACCOUNT',
                 hintText: 'e.g. Roy Family',
                 controller: _spaceNameController,
                 prefixIcon: Icons.home_outlined,
@@ -814,7 +814,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         )
                       else ...[
                         Text(
-                          'Create Account & Launch Space',
+                          'Create Family Account',
                           style: AppTypography.headlineSm(
                             color: Colors.black,
                             fontWeight: FontWeight.w800,

@@ -57,7 +57,7 @@ class InsuranceVaultHeroCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'TOTAL PROTECTION UMBRELLA',
+                    'TOTAL FAMILY COVER',
                     style: AppTypography.caption(
                       color: AppColors.textMuted,
                     ).copyWith(
@@ -182,13 +182,13 @@ class InsuranceVaultHeroCard extends StatelessWidget {
                   ),
                 ),
 
-                // 2. Next Cycle
+                // 2. Next Renewal
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Next Cycle',
+                        'Next Renewal',
                         style: AppTypography.caption(
                           color: AppColors.textMuted,
                         ).copyWith(fontSize: 10),
@@ -212,13 +212,13 @@ class InsuranceVaultHeroCard extends StatelessWidget {
                   ),
                 ),
 
-                // 3. Active Claims
+                // 3. Claims
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Active Claims',
+                        'Claims',
                         style: AppTypography.caption(
                           color: AppColors.textMuted,
                         ).copyWith(fontSize: 10),
@@ -233,7 +233,7 @@ class InsuranceVaultHeroCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'TPA Ready',
+                        'Cashless Ready',
                         style: AppTypography.caption(
                           color: AppColors.textMuted,
                         ).copyWith(fontSize: 10),

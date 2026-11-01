@@ -142,7 +142,7 @@ class _AnimatedConcentricBudgetGaugeState
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'OPTIMAL PACING (${widget.data.daysLeft} DAYS LEFT)',
+                      'ON TRACK (${widget.data.daysLeft} DAYS LEFT)',
                       style: AppTypography.labelSm(
                         color: AppColors.primaryFixed,
                         fontWeight: FontWeight.w700,
@@ -235,7 +235,7 @@ class _AnimatedConcentricBudgetGaugeState
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          'Pacing',
+                          'Spend Speed',
                           style: AppTypography.bodySm(color: AppColors.textPrimary),
                         ),
                         const SizedBox(width: 12),
@@ -249,7 +249,7 @@ class _AnimatedConcentricBudgetGaugeState
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          'Runway',
+                          'Budget Left',
                           style: AppTypography.bodySm(color: AppColors.textPrimary),
                         ),
                       ],
@@ -257,7 +257,7 @@ class _AnimatedConcentricBudgetGaugeState
                     Row(
                       children: [
                         Text(
-                          'Safe Cap: ',
+                          'Safe Limit: ',
                           style: AppTypography.bodySm(color: AppColors.textMuted),
                         ),
                         Text(

@@ -160,7 +160,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           repository: widget.repository,
                           eventId: data.activeEvent.id,
                           eventTitle: data.activeEvent.title,
-                          backLabel: 'Status',
+                          backLabel: 'Home',
                         ),
                       ),
                     );
@@ -197,7 +197,7 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Select Operating Orbit',
+                'Whose View?',
                 style: TextStyle(
                   color: AppColors.textPrimary,
                   fontSize: 18,

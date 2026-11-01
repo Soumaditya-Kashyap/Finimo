@@ -132,13 +132,13 @@ class DeepDiveMemberBurnCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Targeted Cap: ${CurrencyFormatter.formatInr(member.targetCap)}',
+                'Monthly Limit: ${CurrencyFormatter.formatInr(member.targetCap)}',
                 style: AppTypography.bodySm(color: AppColors.textMuted),
               ),
               Text(
                 member.bufferLeft > 1000
                     ? '${CurrencyFormatter.formatInr(member.bufferLeft)} buffer left'
-                    : 'Near monthly ceiling',
+                    : 'Near monthly limit',
                 style: AppTypography.bodySm(
                   color: member.bufferLeft > 1000
                       ? member.accentColor

@@ -100,7 +100,7 @@ class LiquidityHeroCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'CONSOLIDATED LIQUID CASH',
+                          'TOTAL AVAILABLE BALANCE',
                           style: AppTypography.labelSm(
                             color: AppColors.textMuted,
                             fontWeight: FontWeight.w700,
@@ -162,7 +162,7 @@ class LiquidityHeroCard extends StatelessWidget {
                 const SizedBox(height: 4),
 
                 Text(
-                  'Across ${data.jointAccountsCount} joint accounts and liquid reserves',
+                  'Across ${data.jointAccountsCount} accounts and cash reserves',
                   style: AppTypography.bodySm(
                     color: AppColors.textMuted,
                   ),
@@ -170,15 +170,15 @@ class LiquidityHeroCard extends StatelessWidget {
 
                 const SizedBox(height: 18),
 
-                // Telemetry Sub-Pills (3 Columns: Inflow, Spent, Safe Burn)
+                // Telemetry Sub-Pills (3 Columns: Income, Spent, Daily Safe)
                 Row(
                   children: [
-                    // Inflow Sub-pill
+                    // Income Sub-pill
                     Expanded(
                       child: _buildTelemetryPill(
                         icon: Icons.arrow_downward_rounded,
                         iconColor: AppColors.primaryFixed,
-                        label: 'INFLOW',
+                        label: 'INCOME',
                         value: '+${CurrencyFormatter.formatInr(data.monthlyInflow)}',
                         valueColor: AppColors.primaryFixed,
                       ),
@@ -197,12 +197,12 @@ class LiquidityHeroCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
 
-                    // Safe Burn Sub-pill
+                    // Daily Safe Sub-pill
                     Expanded(
                       child: _buildTelemetryPill(
                         icon: Icons.bolt_rounded,
                         iconColor: AppColors.tertiaryFixed,
-                        label: 'SAFE BURN',
+                        label: 'DAILY SAFE',
                         value: '${CurrencyFormatter.formatInr(data.dailySafeBurn)}/day',
                         valueColor: AppColors.tertiaryFixed,
                       ),

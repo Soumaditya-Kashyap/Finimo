@@ -19,14 +19,14 @@ class MemberEquitySplitSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Section Title Row: Member Equity Split ℹ️ ... SETTLED LIVE
+        // Section Title Row: Who Paid How Much ℹ️ ... LIVE SPLIT
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Row(
               children: [
                 Text(
-                  'Member Equity Split',
+                  'Who Paid How Much',
                   style: AppTypography.headlineSm(
                     color: AppColors.textPrimary,
                     fontWeight: FontWeight.w700,
@@ -54,7 +54,7 @@ class MemberEquitySplitSection extends StatelessWidget {
               ],
             ),
             Text(
-              'SETTLED LIVE',
+              'LIVE SPLIT',
               style: const TextStyle(
                 fontFamily: 'SpaceGrotesk',
                 color: AppColors.primaryFixed,

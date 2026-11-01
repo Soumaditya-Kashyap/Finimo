@@ -92,12 +92,12 @@ class _InsuranceVaultScreenState extends State<InsuranceVaultScreen> {
 
                         const SizedBox(height: 22),
 
-                        // Section Title: Active Safeguards & Count
+                        // Section Title: Active Policies & Count
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Active Safeguards',
+                              'Active Policies',
                               style: AppTypography.headlineSm(
                                 color: AppColors.textPrimary,
                                 fontWeight: FontWeight.w700,
@@ -142,7 +142,7 @@ class _InsuranceVaultScreenState extends State<InsuranceVaultScreen> {
                               onTpaCardTap: () {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                    content: Text('Displaying Instant Cashless TPA QR'),
+                                    content: Text('Displaying Cashless Health Card QR'),
                                     duration: Duration(seconds: 1),
                                   ),
                                 );
@@ -150,7 +150,7 @@ class _InsuranceVaultScreenState extends State<InsuranceVaultScreen> {
                               onRenewTap: () {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                    content: Text('Initiating Auto Renewal via Sinking Fund'),
+                                    content: Text('Initiating Renewal from Savings'),
                                     duration: Duration(seconds: 1),
                                   ),
                                 );
@@ -196,7 +196,7 @@ class _InsuranceVaultScreenState extends State<InsuranceVaultScreen> {
               ),
               const SizedBox(width: 8),
               Text(
-                'STATUS',
+                'INSURANCE',
                 style: AppTypography.headlineSm(
                   color: AppColors.textPrimary,
                   fontWeight: FontWeight.w800,
@@ -282,7 +282,7 @@ class _InsuranceVaultScreenState extends State<InsuranceVaultScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'FINANCIAL IMMUNITY',
+                    'FAMILY PROTECTION',
                     style: const TextStyle(
                       fontFamily: 'SpaceGrotesk',
                       color: AppColors.tertiaryFixedDim,
@@ -419,19 +419,19 @@ class _InsuranceVaultScreenState extends State<InsuranceVaultScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Offline encrypted repository with local biometric credentials for instant hospital desk handovers.',
+            'Quickly access health cards and policy details during hospital emergencies.',
             style: AppTypography.bodySm(
               color: AppColors.textMuted,
             ).copyWith(fontSize: 12, height: 1.4),
           ),
           const SizedBox(height: 14),
 
-          // Unlock Secure Locker (Biometric) Button
+          // View Cashless Cards (Biometric) Button
           GestureDetector(
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('Unlocking Biometric Policy Locker...'),
+                  content: Text('Opening Cashless Cards...'),
                   duration: Duration(seconds: 1),
                 ),
               );
@@ -456,7 +456,7 @@ class _InsuranceVaultScreenState extends State<InsuranceVaultScreen> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Unlock Secure Locker\n(Biometric)',
+                      'View Cashless Cards\n(Biometric)',
                       style: AppTypography.bodySm(
                         color: AppColors.textPrimary,
                       ).copyWith(

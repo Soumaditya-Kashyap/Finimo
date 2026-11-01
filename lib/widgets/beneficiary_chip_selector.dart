@@ -29,14 +29,14 @@ class BeneficiaryChipSelector extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Beneficiary / Spent For',
+              'Spent For (Whom?)',
               style: AppTypography.labelMd(
                 color: AppColors.textMuted,
                 fontWeight: FontWeight.w500,
               ),
             ),
             Text(
-              'Split Ratio: 100%',
+              'Full Share',
               style: AppTypography.labelSm(
                 color: AppColors.tertiaryFixed,
                 fontWeight: FontWeight.w600,

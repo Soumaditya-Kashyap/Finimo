@@ -56,7 +56,7 @@ class DeepDiveCategoryBurnCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${category.percentage.round()}% of portfolio burn',
+                    '${category.percentage.round()}% of total spend',
                     style: AppTypography.bodySm(color: AppColors.textMuted),
                   ),
                 ],

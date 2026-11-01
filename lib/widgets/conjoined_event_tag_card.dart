@@ -61,7 +61,7 @@ class ConjoinedEventTagCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 10),
                     Text(
-                      'Tag to Conjoined Event',
+                      'Tag to Shared Event',
                       style: AppTypography.labelMd(
                         color: AppColors.secondary,
                         fontWeight: FontWeight.w600,
@@ -78,7 +78,7 @@ class ConjoinedEventTagCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(9999),
                 ),
                 child: Text(
-                  'Shared Pot',
+                  'Event Pool',
                   style: AppTypography.labelSm(
                     color: AppColors.secondary,
                     fontWeight: FontWeight.w700,
@@ -166,7 +166,7 @@ class ConjoinedEventTagCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        '${event.percentageUsed.toStringAsFixed(1)}% funded',
+                        '${event.percentageUsed.toStringAsFixed(1)}% spent',
                         style: AppTypography.bodySm(
                           color: AppColors.textMuted,
                         ),

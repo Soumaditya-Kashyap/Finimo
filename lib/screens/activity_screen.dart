@@ -32,7 +32,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
     'All',
     'Expenses',
     'Income',
-    'Events / Sinking',
+    'Events & Goals',
   ];
 
   @override
@@ -107,7 +107,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'AUDIT & VELOCITY',
+                          'TRANSACTION HISTORY',
                           style: AppTypography.labelSm(
                             color: AppColors.textMuted,
                             fontWeight: FontWeight.w700,
@@ -164,7 +164,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
 
                 const SizedBox(height: 16),
 
-                // 2. Filter Chips Carousel (All, Expenses, Income, Events / Sinking)
+                // 2. Filter Chips Carousel (All, Expenses, Income, Events & Goals)
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   physics: const BouncingScrollPhysics(),
@@ -197,7 +197,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                if (filter == 'Events / Sinking') ...[
+                                if (filter == 'Events & Goals') ...[
                                   Container(
                                     width: 6,
                                     height: 6,
@@ -348,7 +348,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
       return list.where((t) => t.isExpense).toList();
     } else if (_selectedFilter == 'Income') {
       return list.where((t) => !t.isExpense).toList();
-    } else if (_selectedFilter == 'Events / Sinking') {
+    } else if (_selectedFilter == 'Events & Goals') {
       return list.where((t) => t.badgeText?.contains('Pujo') == true).toList();
     }
     return list;

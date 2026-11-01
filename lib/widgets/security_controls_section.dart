@@ -27,7 +27,7 @@ class SecurityControlsSection extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'SECURITY & APP CONTROLS',
+              'SECURITY & CONTROLS',
               style: AppTypography.caption(
                 color: AppColors.textMuted,
               ).copyWith(
@@ -37,7 +37,7 @@ class SecurityControlsSection extends StatelessWidget {
               ),
             ),
             Text(
-              'Passkey Ready',
+              'Biometric Ready',
               style: AppTypography.caption(
                 color: AppColors.textMuted,
               ).copyWith(
@@ -163,7 +163,7 @@ class SecurityControlsSection extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Credential Management',
+                              'Password & Security',
                               style: AppTypography.bodyMd(
                                 color: AppColors.textPrimary,
                                 fontWeight: FontWeight.w600,
@@ -171,7 +171,7 @@ class SecurityControlsSection extends StatelessWidget {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Rotate password & security keys',
+                              'Change password & security',
                               style: AppTypography.bodySm(
                                 color: AppColors.textMuted,
                               ).copyWith(fontSize: 12),
@@ -191,7 +191,7 @@ class SecurityControlsSection extends StatelessWidget {
 
               const SizedBox(height: 10),
 
-              // 3. Engine Release Tile
+              // 3. App Version Tile
               Container(
                 decoration: BoxDecoration(
                   color: AppColors.surface02,
@@ -211,7 +211,7 @@ class SecurityControlsSection extends StatelessWidget {
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Icon(
-                        Icons.view_in_ar_rounded,
+                        Icons.info_outline_rounded,
                         size: 20,
                         color: AppColors.textMuted,
                       ),
@@ -222,7 +222,7 @@ class SecurityControlsSection extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Engine Release',
+                            'App Version',
                             style: AppTypography.bodyMd(
                               color: AppColors.textPrimary,
                               fontWeight: FontWeight.w600,
@@ -230,7 +230,7 @@ class SecurityControlsSection extends StatelessWidget {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'Client runtime snapshot',
+                            'Release information',
                             style: AppTypography.bodySm(
                               color: AppColors.textMuted,
                             ).copyWith(fontSize: 12),

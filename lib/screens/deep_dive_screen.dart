@@ -85,7 +85,7 @@ class _DeepDiveScreenState extends State<DeepDiveScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'TELEMETRY & AUDIT',
+                          'MONTHLY ANALYTICS',
                           style: AppTypography.labelSm(
                             color: AppColors.textMuted,
                             fontWeight: FontWeight.w700,
@@ -93,7 +93,7 @@ class _DeepDiveScreenState extends State<DeepDiveScreen> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'DEEP DIVE',
+                          'INSIGHTS',
                           style: AppTypography.headlineMd(
                             color: AppColors.textPrimary,
                           ).copyWith(
@@ -318,9 +318,9 @@ class _DeepDiveScreenState extends State<DeepDiveScreen> {
 
                   const SizedBox(height: 24),
 
-                  // 4. Burn Categories Breakdown List
+                  // 4. Expense Breakdown List
                   Text(
-                    'BURN CATEGORIES',
+                    'EXPENSE BREAKDOWN',
                     style: AppTypography.labelSm(
                       color: AppColors.textMuted,
                       fontWeight: FontWeight.w700,
@@ -345,7 +345,7 @@ class _DeepDiveScreenState extends State<DeepDiveScreen> {
                   const SizedBox(height: 24),
 
                   Text(
-                    'HOUSEHOLD MEMBERS BURN',
+                    'MEMBER-WISE SPENDING',
                     style: AppTypography.labelSm(
                       color: AppColors.textMuted,
                       fontWeight: FontWeight.w700,
@@ -385,7 +385,7 @@ class _DeepDiveScreenState extends State<DeepDiveScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'HOUSEHOLD ALLOCATION',
+            'FAMILY SPEND SHARE',
             style: AppTypography.labelSm(
               color: AppColors.textMuted,
               fontWeight: FontWeight.w700,
@@ -393,7 +393,7 @@ class _DeepDiveScreenState extends State<DeepDiveScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Spend Attribution by Household Unit',
+            'Spend by Family Member',
             style: AppTypography.headlineSm(
               color: AppColors.textPrimary,
               fontWeight: FontWeight.w700,

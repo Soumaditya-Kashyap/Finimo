@@ -25,7 +25,7 @@ class RecentFlowsSection extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Recent Flows',
+                'Recent Activity',
                 style: AppTypography.headlineSm(
                   color: AppColors.textPrimary,
                   fontWeight: FontWeight.w700,
@@ -34,7 +34,7 @@ class RecentFlowsSection extends StatelessWidget {
               InkWell(
                 onTap: onSeeLedgerTap,
                 child: Text(
-                  'See Ledger',
+                  'View All',
                   style: AppTypography.labelMd(
                     color: AppColors.textMuted,
                     fontWeight: FontWeight.w500,

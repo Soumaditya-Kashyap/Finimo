@@ -32,7 +32,7 @@ class PaidByPayerSelector extends StatelessWidget {
               ),
             ),
             Text(
-              'Family Ledger',
+              'Family Account',
               style: AppTypography.labelSm(
                 color: AppColors.primaryFixed,
                 fontWeight: FontWeight.w600,
@@ -50,7 +50,7 @@ class PaidByPayerSelector extends StatelessWidget {
               child: _buildPayerCard(
                 memberId: 'm1_arpa',
                 name: 'Arpa',
-                role: 'Primary D...',
+                role: 'Primary',
                 initial: 'A',
                 isSelected: selectedMemberId == 'm1_arpa',
                 avatarBg: AppColors.secondaryContainer,
@@ -60,8 +60,8 @@ class PaidByPayerSelector extends StatelessWidget {
             Expanded(
               child: _buildPayerCard(
                 memberId: 'm2_chandrani',
-                name: 'Chandra...',
-                role: 'Co-Spen...',
+                name: 'Chandrani',
+                role: 'Spouse',
                 initial: 'C',
                 isSelected: selectedMemberId == 'm2_chandrani',
                 avatarBg: AppColors.surface03,

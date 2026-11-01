@@ -69,7 +69,7 @@ class ActiveEventSnapshotCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(9999),
                           ),
                           child: Text(
-                            'CONJOINED EVENT',
+                            'EVENT BUDGET',
                             style: AppTypography.labelSm(
                               color: AppColors.secondary,
                               fontWeight: FontWeight.w700,
@@ -104,7 +104,7 @@ class ActiveEventSnapshotCard extends StatelessWidget {
 
                 const SizedBox(height: 14),
 
-                // Numbers: Spent of cap & Left
+                // Numbers: Spent of budget & Left
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -125,7 +125,7 @@ class ActiveEventSnapshotCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          'spent of ${CurrencyFormatter.formatInr(event.budgetCap)} cap',
+                          'spent of ${CurrencyFormatter.formatInr(event.budgetCap)} budget',
                           style: AppTypography.bodySm(
                             color: AppColors.textMuted,
                           ),

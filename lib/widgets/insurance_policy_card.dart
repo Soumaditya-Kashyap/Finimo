@@ -240,7 +240,7 @@ class InsurancePolicyCard extends StatelessWidget {
                       ),
                     ),
                     child: const Text(
-                      'HEALTH FLOATER',
+                      'FAMILY HEALTH',
                       style: TextStyle(
                         fontFamily: 'SpaceGrotesk',
                         color: AppColors.primaryFixed,
@@ -388,7 +388,7 @@ class InsurancePolicyCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'Instant Cashless TPA Card',
+                        'Cashless Health Card',
                         style: AppTypography.bodySm(
                           color: AppColors.textPrimary,
                         ).copyWith(
@@ -443,7 +443,7 @@ class InsurancePolicyCard extends StatelessWidget {
                       ),
                     ),
                     child: const Text(
-                      'MOTOR ASSET',
+                      'VEHICLE COVER',
                       style: TextStyle(
                         fontFamily: 'SpaceGrotesk',
                         color: AppColors.dangerCoral,
@@ -554,12 +554,12 @@ class InsurancePolicyCard extends StatelessWidget {
 
           const SizedBox(height: 10),
 
-          // Sinking Fund Status Row: Sinking Fund Balance: ₹12,000 | Fully Funded
+          // Premium Savings Status Row: Saved for Premium: ₹12,000 | Fully Funded
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Sinking Fund Balance: ₹${CurrencyFormatter.format(policy.sinkingFundBalance ?? 12000).replaceAll('₹', '').replaceAll('.00', '')}',
+                'Saved for Premium: ₹${CurrencyFormatter.format(policy.sinkingFundBalance ?? 12000).replaceAll('₹', '').replaceAll('.00', '')}',
                 style: AppTypography.caption(
                   color: AppColors.textMuted,
                 ).copyWith(fontSize: 11),

@@ -34,7 +34,7 @@ class QuickActionGrid extends StatelessWidget {
             Expanded(
               child: _buildSecondaryButton(
                 title: 'Income',
-                subtitle: 'Vault Inflow',
+                subtitle: 'Salary & Inflow',
                 subtitleColor: AppColors.textMuted,
                 icon: Icons.south_west_rounded,
                 iconColor: AppColors.primaryFixed,
@@ -46,14 +46,14 @@ class QuickActionGrid extends StatelessWidget {
         ),
         const SizedBox(height: 10),
 
-        // Row 2: Event Bill (Conjoined Pool) + Policy (Term & Health)
+        // Row 2: Event Expense (Festival & Trips) + Policy (Term & Health)
         Row(
           children: [
-            // Event Bill Button
+            // Event Expense Button
             Expanded(
               child: _buildSecondaryButton(
-                title: 'Event Bill',
-                subtitle: 'Conjoined Pool',
+                title: 'Event Expense',
+                subtitle: 'Festival & Trips',
                 subtitleColor: AppColors.secondary,
                 icon: Icons.celebration_rounded,
                 iconColor: AppColors.secondary,
@@ -86,7 +86,7 @@ class QuickActionGrid extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
         decoration: BoxDecoration(
           color: AppColors.primaryFixed,
           borderRadius: BorderRadius.circular(16),
@@ -99,34 +99,40 @@ class QuickActionGrid extends StatelessWidget {
           ],
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Expense',
-                  style: AppTypography.headlineSm(
-                    color: AppColors.canvasBase,
-                    fontWeight: FontWeight.w700,
-                  ).copyWith(
-                    fontSize: 17,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Expense',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.headlineSm(
+                      color: AppColors.canvasBase,
+                      fontWeight: FontWeight.w700,
+                    ).copyWith(
+                      fontSize: 16,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Direct Outflow',
-                  style: AppTypography.labelSm(
-                    color: AppColors.canvasBase.withValues(alpha: 0.8),
-                    fontWeight: FontWeight.w600,
+                  const SizedBox(height: 2),
+                  Text(
+                    'Daily Spend',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.labelSm(
+                      color: AppColors.canvasBase.withValues(alpha: 0.8),
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
+            const SizedBox(width: 6),
             Container(
-              width: 36,
-              height: 36,
+              width: 34,
+              height: 34,
               decoration: const BoxDecoration(
                 color: AppColors.canvasBase,
                 shape: BoxShape.circle,
@@ -134,7 +140,7 @@ class QuickActionGrid extends StatelessWidget {
               child: const Icon(
                 Icons.add_rounded,
                 color: AppColors.primaryFixed,
-                size: 22,
+                size: 20,
               ),
             ),
           ],
@@ -156,41 +162,47 @@ class QuickActionGrid extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
         decoration: BoxDecoration(
           color: AppColors.surface02,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppColors.ghostBorder, width: 1),
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  title,
-                  style: AppTypography.headlineSm(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w700,
-                  ).copyWith(
-                    fontSize: 17,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.headlineSm(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ).copyWith(
+                      fontSize: 16,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: AppTypography.labelSm(
-                    color: subtitleColor,
-                    fontWeight: FontWeight.w600,
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.labelSm(
+                      color: subtitleColor,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
+            const SizedBox(width: 6),
             Container(
-              width: 36,
-              height: 36,
+              width: 34,
+              height: 34,
               decoration: BoxDecoration(
                 color: iconBgColor,
                 shape: BoxShape.circle,
@@ -198,7 +210,7 @@ class QuickActionGrid extends StatelessWidget {
               child: Icon(
                 icon,
                 color: iconColor,
-                size: 20,
+                size: 19,
               ),
             ),
           ],

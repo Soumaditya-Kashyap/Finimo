@@ -135,7 +135,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
                         const SizedBox(height: 28),
 
-                        // 4. Log Out of Space CTA Button
+                        // 4. Log Out CTA Button
                         GestureDetector(
                           onTap: () {
                             _showLogoutConfirmation(context);
@@ -161,7 +161,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  'Log Out of Space',
+                                  'Log Out',
                                   style: AppTypography.headlineSm(
                                     color: AppColors.dangerCoral,
                                     fontWeight: FontWeight.w700,
@@ -174,7 +174,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
                         const SizedBox(height: 14),
 
-                        // 5. Authenticated terminal footer note
+                        // 5. Authenticated device footer note
                         Center(
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -185,7 +185,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                   color: AppColors.textMuted,
                                 ).copyWith(fontSize: 11, height: 1.4),
                                 children: [
-                                  const TextSpan(text: 'Authenticated as '),
+                                  const TextSpan(text: 'Signed in as '),
                                   TextSpan(
                                     text: profile.email,
                                     style: const TextStyle(
@@ -194,7 +194,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                     ),
                                   ),
                                   const TextSpan(
-                                    text: ' on this secure\nterminal',
+                                    text: ' on this\ndevice',
                                   ),
                                 ],
                               ),
@@ -321,7 +321,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               ),
               const SizedBox(height: 20),
               Text(
-                'Log Out of Space?',
+                'Log Out?',
                 style: AppTypography.headlineSm(
                   color: AppColors.textPrimary,
                   fontWeight: FontWeight.w700,
@@ -329,7 +329,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'You will need to re-authenticate with your passkey or biometric credentials to access Roy Family.',
+                'You will need to sign in again to access Roy Family.',
                 textAlign: TextAlign.center,
                 style: AppTypography.bodySm(color: AppColors.textMuted),
               ),

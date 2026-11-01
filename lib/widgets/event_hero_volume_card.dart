@@ -107,9 +107,9 @@ class EventHeroVolumeCard extends StatelessWidget {
 
                 const SizedBox(height: 18),
 
-                // Label: TOTAL SUNK VOLUME
+                // Label: TOTAL EVENT SPEND
                 Text(
-                  'TOTAL SUNK VOLUME',
+                  'TOTAL EVENT SPEND',
                   style: AppTypography.caption(
                     color: AppColors.textMuted,
                   ).copyWith(
@@ -323,13 +323,13 @@ class EventHeroVolumeCard extends StatelessWidget {
                         ),
                       ),
 
-                      // 3. AVG BURN: ₹1,445 / day run-rate
+                      // 3. DAILY AVG: ₹1,445 / day avg
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'AVG BURN',
+                              'DAILY AVG',
                               style: AppTypography.caption(
                                 color: AppColors.textMuted,
                               ).copyWith(
@@ -348,7 +348,7 @@ class EventHeroVolumeCard extends StatelessWidget {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              '/ day run-rate',
+                              '/ day avg',
                               style: AppTypography.caption(
                                 color: AppColors.primaryFixed,
                               ).copyWith(fontSize: 10),
