@@ -144,38 +144,11 @@ class _AuthScreenState extends State<AuthScreen> {
       key: const ValueKey('LoginView'),
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // FINIMO logo + neon green glowing dot
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-              'FINIMO',
-              style: AppTypography.displayLg(
-                color: AppColors.textPrimary,
-              ).copyWith(
-                fontSize: 32,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.5,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(
-                color: AppColors.primaryFixed,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primaryFixed.withValues(alpha: 0.9),
-                    blurRadius: 10,
-                    spreadRadius: 2,
-                  ),
-                ],
-              ),
-            ),
-          ],
+        // FINIMO wordmark logo
+        Image.asset(
+          'assets/logos/finimo_wordmark.png',
+          width: 175,
+          fit: BoxFit.contain,
         ),
         const SizedBox(height: 12),
 
@@ -597,41 +570,19 @@ class _AuthScreenState extends State<AuthScreen> {
   Widget _buildSignUpView() {
     return Column(
       key: const ValueKey('SignUpView'),
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Title: Get Started with FINIMO + neon green glowing dot
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-              'Get Started with FINIMO',
-              style: AppTypography.headlineSm(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w700,
-              ).copyWith(fontSize: 22),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: AppColors.primaryFixed,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primaryFixed.withValues(alpha: 0.9),
-                    blurRadius: 8,
-                    spreadRadius: 1.5,
-                  ),
-                ],
-              ),
-            ),
-          ],
+        // FINIMO wordmark logo
+        Image.asset(
+          'assets/logos/finimo_wordmark.png',
+          width: 175,
+          fit: BoxFit.contain,
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 12),
 
         Text(
           'Set up your family account.',
+          textAlign: TextAlign.center,
           style: AppTypography.bodyMd(
             color: AppColors.textMuted,
           ),

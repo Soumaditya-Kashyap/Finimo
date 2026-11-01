@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'screens/auth_screen.dart';
+import 'screens/splash_screen.dart';
 import 'services/auth_repository.dart';
 import 'services/home_repository.dart';
 import 'theme/app_colors.dart';
@@ -43,10 +43,9 @@ class FinimoApp extends StatelessWidget {
           error: AppColors.dangerCoral,
         ),
       ),
-      home: AuthScreen(
+      home: SplashScreen(
         authRepository: authRepository,
         homeRepository: homeRepository,
-        initialMode: AuthMode.login,
       ),
     );
   }
