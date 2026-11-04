@@ -5,7 +5,7 @@ import '../theme/app_typography.dart';
 import '../utils/currency_formatter.dart';
 
 class ActiveEventSnapshotCard extends StatelessWidget {
-  final ConjoinedEventSummary event;
+  final ConjoinedEventSummary? event;
   final VoidCallback? onBreakdownTap;
 
   const ActiveEventSnapshotCard({
@@ -16,6 +16,56 @@ class ActiveEventSnapshotCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (event == null) {
+      return Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: AppColors.purpleSubtle,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppColors.ghostBorder, width: 1),
+        ),
+        padding: const EdgeInsets.all(18),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: AppColors.secondaryContainer.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.celebration_outlined,
+                color: AppColors.secondary,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'No Active Sinking Pool',
+                    style: AppTypography.labelMd(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Shared pool for festivals & events will appear here',
+                    style: AppTypography.caption(color: AppColors.textMuted),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final currentEvent = event!;
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -63,9 +113,11 @@ class ActiveEventSnapshotCard extends StatelessWidget {
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: AppColors.secondaryContainer.withValues(alpha: 0.4),
+                            color: AppColors.secondaryContainer
+                                .withValues(alpha: 0.4),
                             borderRadius: BorderRadius.circular(9999),
                           ),
                           child: Text(
@@ -79,10 +131,11 @@ class ActiveEventSnapshotCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        const Text('•', style: TextStyle(color: AppColors.textMuted)),
+                        const Text('•',
+                            style: TextStyle(color: AppColors.textMuted)),
                         const SizedBox(width: 8),
                         Text(
-                          event.title,
+                          currentEvent.title,
                           style: AppTypography.labelMd(
                             color: AppColors.textPrimary,
                             fontWeight: FontWeight.w600,
@@ -91,7 +144,7 @@ class ActiveEventSnapshotCard extends StatelessWidget {
                       ],
                     ),
                     Text(
-                      '${event.percentageUsed.toStringAsFixed(1)}%',
+                      '${currentEvent.percentageUsed.toStringAsFixed(1)}%',
                       style: AppTypography.labelSm(
                         color: AppColors.secondary,
                         fontWeight: FontWeight.w700,
@@ -115,7 +168,7 @@ class ActiveEventSnapshotCard extends StatelessWidget {
                       textBaseline: TextBaseline.alphabetic,
                       children: [
                         Text(
-                          CurrencyFormatter.formatInr(event.totalSpent),
+                          CurrencyFormatter.formatInr(currentEvent.totalSpent),
                           style: AppTypography.headlineSm(
                             color: AppColors.textPrimary,
                             fontWeight: FontWeight.w700,
@@ -125,7 +178,7 @@ class ActiveEventSnapshotCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          'spent of ${CurrencyFormatter.formatInr(event.budgetCap)} budget',
+                          'spent of ${CurrencyFormatter.formatInr(currentEvent.budgetCap)} budget',
                           style: AppTypography.bodySm(
                             color: AppColors.textMuted,
                           ),
@@ -133,7 +186,7 @@ class ActiveEventSnapshotCard extends StatelessWidget {
                       ],
                     ),
                     Text(
-                      '${CurrencyFormatter.formatInr(event.remainingBudget)} left',
+                      '${CurrencyFormatter.formatInr(currentEvent.remainingBudget)} left',
                       style: AppTypography.labelSm(
                         color: AppColors.dangerCoral,
                         fontWeight: FontWeight.w600,
@@ -146,7 +199,7 @@ class ActiveEventSnapshotCard extends StatelessWidget {
 
                 const SizedBox(height: 10),
 
-                // Neon Multi-Stop Progress Bar (86.7%)
+                // Neon Multi-Stop Progress Bar
                 Container(
                   width: double.infinity,
                   height: 10,
@@ -156,7 +209,8 @@ class ActiveEventSnapshotCard extends StatelessWidget {
                   ),
                   child: FractionallySizedBox(
                     alignment: Alignment.centerLeft,
-                    widthFactor: (event.percentageUsed / 100).clamp(0.0, 1.0),
+                    widthFactor:
+                        (currentEvent.percentageUsed / 100).clamp(0.0, 1.0),
                     child: Container(
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(9999),
@@ -193,7 +247,7 @@ class ActiveEventSnapshotCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          '${event.contributingMembersCount} members contributing',
+                          '${currentEvent.contributingMembersCount} members contributing',
                           style: AppTypography.labelSm(
                             color: AppColors.textMuted,
                             fontWeight: FontWeight.w500,

@@ -47,17 +47,44 @@ class RecentFlowsSection extends StatelessWidget {
 
         const SizedBox(height: 12),
 
-        // List of Transactions with No-Line rule (vertical spacing gap + surface shift)
-        ListView.separated(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: items.length,
-          separatorBuilder: (_, index) => const SizedBox(height: 8),
-          itemBuilder: (context, index) {
-            final item = items[index];
-            return _buildTransactionCard(item);
-          },
-        ),
+        if (items.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+            decoration: BoxDecoration(
+              color: AppColors.surface01,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.04),
+              ),
+            ),
+            child: Column(
+              children: [
+                const Icon(
+                  Icons.receipt_long_outlined,
+                  color: AppColors.textMuted,
+                  size: 28,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'No recent flows yet',
+                  style: AppTypography.bodySm(color: AppColors.textMuted),
+                ),
+              ],
+            ),
+          )
+        else
+          // List of Transactions with No-Line rule (vertical spacing gap + surface shift)
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: items.length,
+            separatorBuilder: (_, index) => const SizedBox(height: 8),
+            itemBuilder: (context, index) {
+              final item = items[index];
+              return _buildTransactionCard(item);
+            },
+          ),
       ],
     );
   }

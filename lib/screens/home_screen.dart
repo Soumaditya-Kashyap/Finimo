@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
+import '../models/conjoined_event_summary.dart';
 import '../models/family_member.dart';
 import '../models/home_dashboard_data.dart';
-import '../models/conjoined_event_summary.dart';
 import '../models/transaction_item.dart';
+import '../services/dashboard_repository.dart';
+import '../services/family_repository.dart';
 import '../services/home_repository.dart';
+import '../services/transaction_repository.dart';
 import '../theme/app_colors.dart';
-import '../widgets/finimo_app_bar.dart';
+import '../widgets/active_event_snapshot_card.dart';
 import '../widgets/family_orbit_selector.dart';
+import '../widgets/finimo_app_bar.dart';
 import '../widgets/liquidity_hero_card.dart';
 import '../widgets/quick_action_grid.dart';
-import '../widgets/active_event_snapshot_card.dart';
 import '../widgets/recent_flows_section.dart';
 import 'add_expense_income_screen.dart';
 import 'conjoined_event_detail_screen.dart';
@@ -18,11 +21,17 @@ import 'user_profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final HomeRepository repository;
+  final DashboardRepository? dashboardRepository;
+  final FamilyRepository? familyRepository;
+  final TransactionRepository? transactionRepository;
   final VoidCallback? onSeeLedgerTap;
 
   const HomeScreen({
     super.key,
     required this.repository,
+    this.dashboardRepository,
+    this.familyRepository,
+    this.transactionRepository,
     this.onSeeLedgerTap,
   });
 
@@ -31,27 +40,47 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  late final DashboardRepository _dashboardRepo;
+  late final FamilyRepository _familyRepo;
+  late final TransactionRepository _transactionRepo;
+
   late Future<_HomeScreenData> _futureData;
   String _selectedFamilyScope = 'Family (All)';
+  String? _selectedMemberId;
 
   @override
   void initState() {
     super.initState();
+    _dashboardRepo =
+        widget.dashboardRepository ?? HttpDashboardRepository();
+    _familyRepo = widget.familyRepository ?? HttpFamilyRepository();
+    _transactionRepo =
+        widget.transactionRepository ?? HttpTransactionRepository();
     _loadData();
   }
 
-  void _loadData() {
-    _futureData = Future.wait([
-      widget.repository.getFamilyMembers(),
-      widget.repository.getDashboardMetrics(),
-      widget.repository.getActiveConjoinedEvent(),
-      widget.repository.getRecentFlows(),
-    ]).then((results) => _HomeScreenData(
-          members: results[0] as List<FamilyMember>,
-          dashboard: results[1] as HomeDashboardData,
-          activeEvent: results[2] as ConjoinedEventSummary,
-          recentFlows: results[3] as List<TransactionItem>,
-        ));
+  void _loadData({String? selectedMemberId}) {
+    setState(() {
+      _futureData = Future.wait([
+        _familyRepo
+            .getFamilyMembers()
+            .catchError((_) => widget.repository.getFamilyMembers()),
+        _dashboardRepo
+            .getDashboardMetrics(memberId: selectedMemberId)
+            .catchError((_) => widget.repository.getDashboardMetrics()),
+        _dashboardRepo
+            .getActiveConjoinedEvent()
+            .catchError((_) => widget.repository.getActiveConjoinedEvent()),
+        _transactionRepo
+            .getRecentTransactions(limit: 5, memberId: selectedMemberId)
+            .catchError((_) => widget.repository.getRecentFlows()),
+      ]).then((results) => _HomeScreenData(
+            members: results[0] as List<FamilyMember>,
+            dashboard: results[1] as HomeDashboardData,
+            activeEvent: results[2] as ConjoinedEventSummary?,
+            recentFlows: results[3] as List<TransactionItem>,
+          ));
+    });
   }
 
   @override
@@ -62,12 +91,14 @@ class _HomeScreenState extends State<HomeScreen> {
         onNotificationTap: () {
           // Future notification tray
         },
-        onProfileTap: () {
-          Navigator.of(context).push(
+        onProfileTap: () async {
+          await Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (ctx) => UserProfileScreen(repository: widget.repository),
+              builder: (ctx) =>
+                  UserProfileScreen(repository: widget.repository),
             ),
           );
+          if (mounted) _loadData(selectedMemberId: _selectedMemberId);
         },
       ),
       body: FutureBuilder<_HomeScreenData>(
@@ -81,100 +112,139 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           }
 
-          if (snapshot.hasError) {
+          if (snapshot.hasError && snapshot.data == null) {
             return Center(
-              child: Text(
-                'Error loading dashboard: ${snapshot.error}',
-                style: const TextStyle(color: AppColors.dangerCoral),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Error loading dashboard: ${snapshot.error}',
+                    style: const TextStyle(color: AppColors.dangerCoral),
+                  ),
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: () =>
+                        _loadData(selectedMemberId: _selectedMemberId),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryFixed,
+                      foregroundColor: Colors.black,
+                    ),
+                    child: const Text('Retry'),
+                  ),
+                ],
               ),
             );
           }
 
           final data = snapshot.data!;
 
-          return SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 120),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 1. Operating Orbit & Family Vault Selector
-                FamilyOrbitSelector(
-                  members: data.members,
-                  selectedLabel: _selectedFamilyScope,
-                  onTap: () => _showFamilySelectorSheet(data.members),
-                ),
+          return RefreshIndicator(
+            color: AppColors.primaryFixed,
+            backgroundColor: AppColors.surface01,
+            onRefresh: () async {
+              _loadData(selectedMemberId: _selectedMemberId);
+              await _futureData;
+            },
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
+              ),
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 120),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 1. Operating Orbit & Family Vault Selector
+                  FamilyOrbitSelector(
+                    members: data.members,
+                    selectedLabel: _selectedFamilyScope,
+                    onTap: () => _showFamilySelectorSheet(data.members),
+                  ),
 
-                const SizedBox(height: 18),
+                  const SizedBox(height: 18),
 
-                // 2. Consolidated Liquid Cash Hero Card
-                LiquidityHeroCard(
-                  data: data.dashboard,
-                ),
+                  // 2. Consolidated Liquid Cash Hero Card
+                  LiquidityHeroCard(
+                    data: data.dashboard,
+                  ),
 
-                const SizedBox(height: 18),
+                  const SizedBox(height: 18),
 
-                // 3. Quick Action Grid (Expense, Income, Event Bill, Policy)
-                QuickActionGrid(
-                  onExpenseTap: () {
-                    AddExpenseIncomeScreen.show(
-                      context,
-                      repository: widget.repository,
-                      initialType: TransactionType.expense,
-                    );
-                  },
-                  onIncomeTap: () {
-                    AddExpenseIncomeScreen.show(
-                      context,
-                      repository: widget.repository,
-                      initialType: TransactionType.income,
-                    );
-                  },
-                  onEventBillTap: () {
-                    AddExpenseIncomeScreen.show(
-                      context,
-                      repository: widget.repository,
-                      initialType: TransactionType.expense,
-                    );
-                  },
-                  onPolicyTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (ctx) => InsuranceVaultScreen(
-                          repository: widget.repository,
+                  // 3. Quick Action Grid (Expense, Income, Event Bill, Policy)
+                  QuickActionGrid(
+                    onExpenseTap: () async {
+                      await AddExpenseIncomeScreen.show(
+                        context,
+                        repository: widget.repository,
+                        initialType: TransactionType.expense,
+                      );
+                      if (mounted) {
+                        _loadData(selectedMemberId: _selectedMemberId);
+                      }
+                    },
+                    onIncomeTap: () async {
+                      await AddExpenseIncomeScreen.show(
+                        context,
+                        repository: widget.repository,
+                        initialType: TransactionType.income,
+                      );
+                      if (mounted) {
+                        _loadData(selectedMemberId: _selectedMemberId);
+                      }
+                    },
+                    onEventBillTap: () async {
+                      await AddExpenseIncomeScreen.show(
+                        context,
+                        repository: widget.repository,
+                        initialType: TransactionType.expense,
+                      );
+                      if (mounted) {
+                        _loadData(selectedMemberId: _selectedMemberId);
+                      }
+                    },
+                    onPolicyTap: () async {
+                      await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (ctx) => InsuranceVaultScreen(
+                            repository: widget.repository,
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                ),
+                      );
+                      if (mounted) {
+                        _loadData(selectedMemberId: _selectedMemberId);
+                      }
+                    },
+                  ),
 
-                const SizedBox(height: 18),
+                  const SizedBox(height: 18),
 
-                // 4. Conjoined Sinking Fund (Durga Puja 2026) Card
-                ActiveEventSnapshotCard(
-                  event: data.activeEvent,
-                  onBreakdownTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (ctx) => ConjoinedEventDetailScreen(
-                          repository: widget.repository,
-                          eventId: data.activeEvent.id,
-                          eventTitle: data.activeEvent.title,
-                          backLabel: 'Home',
-                        ),
-                      ),
-                    );
-                  },
-                ),
+                  // 4. Conjoined Sinking Fund Card
+                  ActiveEventSnapshotCard(
+                    event: data.activeEvent,
+                    onBreakdownTap: data.activeEvent != null
+                        ? () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (ctx) => ConjoinedEventDetailScreen(
+                                  repository: widget.repository,
+                                  eventId: data.activeEvent!.id,
+                                  eventTitle: data.activeEvent!.title,
+                                  backLabel: 'Home',
+                                ),
+                              ),
+                            );
+                          }
+                        : null,
+                  ),
 
-                const SizedBox(height: 22),
+                  const SizedBox(height: 22),
 
-                // 5. Recent Flows Ledger Feed
-                RecentFlowsSection(
-                  items: data.recentFlows,
-                  onSeeLedgerTap: widget.onSeeLedgerTap,
-                ),
-              ],
+                  // 5. Recent Flows Ledger Feed
+                  RecentFlowsSection(
+                    items: data.recentFlows,
+                    onSeeLedgerTap: widget.onSeeLedgerTap,
+                  ),
+                ],
+              ),
             ),
           );
         },
@@ -219,8 +289,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     ? const Icon(Icons.check, color: AppColors.primaryFixed)
                     : null,
                 onTap: () {
-                  setState(() => _selectedFamilyScope = 'Family (All)');
+                  setState(() {
+                    _selectedFamilyScope = 'Family (All)';
+                    _selectedMemberId = null;
+                  });
                   Navigator.pop(ctx);
+                  _loadData(selectedMemberId: null);
                 },
               ),
               ...members.map(
@@ -242,14 +316,19 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   subtitle: Text(
                     m.relationType.name.toUpperCase(),
-                    style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+                    style: const TextStyle(
+                        color: AppColors.textMuted, fontSize: 11),
                   ),
                   trailing: _selectedFamilyScope == m.name
                       ? const Icon(Icons.check, color: AppColors.primaryFixed)
                       : null,
                   onTap: () {
-                    setState(() => _selectedFamilyScope = m.name);
+                    setState(() {
+                      _selectedFamilyScope = m.name;
+                      _selectedMemberId = m.id;
+                    });
                     Navigator.pop(ctx);
+                    _loadData(selectedMemberId: m.id);
                   },
                 ),
               ),
@@ -264,13 +343,13 @@ class _HomeScreenState extends State<HomeScreen> {
 class _HomeScreenData {
   final List<FamilyMember> members;
   final HomeDashboardData dashboard;
-  final ConjoinedEventSummary activeEvent;
+  final ConjoinedEventSummary? activeEvent;
   final List<TransactionItem> recentFlows;
 
   _HomeScreenData({
     required this.members,
     required this.dashboard,
-    required this.activeEvent,
+    this.activeEvent,
     required this.recentFlows,
   });
 }
