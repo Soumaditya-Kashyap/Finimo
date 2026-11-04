@@ -5,6 +5,8 @@ class TokenStorage {
   static const _accessTokenKey = 'finimo_access_token';
   static const _refreshTokenKey = 'finimo_refresh_token';
   static const _activeFamilyIdKey = 'finimo_active_family_id';
+  static const _activeFamilyNameKey = 'finimo_active_family_name';
+  static const _userEmailKey = 'finimo_user_email';
 
   final FlutterSecureStorage _storage;
 
@@ -18,27 +20,73 @@ class TokenStorage {
     required String accessToken,
     required String refreshToken,
   }) async {
-    await _storage.write(key: _accessTokenKey, value: accessToken);
-    await _storage.write(key: _refreshTokenKey, value: refreshToken);
+    try {
+      await _storage.write(key: _accessTokenKey, value: accessToken);
+      await _storage.write(key: _refreshTokenKey, value: refreshToken);
+    } catch (_) {}
   }
 
   Future<String?> getAccessToken() async {
-    return _storage.read(key: _accessTokenKey);
+    try {
+      return await _storage.read(key: _accessTokenKey);
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<String?> getRefreshToken() async {
-    return _storage.read(key: _refreshTokenKey);
+    try {
+      return await _storage.read(key: _refreshTokenKey);
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> saveActiveFamilyId(String familyId) async {
-    await _storage.write(key: _activeFamilyIdKey, value: familyId);
+    try {
+      await _storage.write(key: _activeFamilyIdKey, value: familyId);
+    } catch (_) {}
   }
 
   Future<String?> getActiveFamilyId() async {
-    return _storage.read(key: _activeFamilyIdKey);
+    try {
+      return await _storage.read(key: _activeFamilyIdKey);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveActiveFamilyName(String familyName) async {
+    try {
+      await _storage.write(key: _activeFamilyNameKey, value: familyName);
+    } catch (_) {}
+  }
+
+  Future<String?> getActiveFamilyName() async {
+    try {
+      return await _storage.read(key: _activeFamilyNameKey);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveUserEmail(String email) async {
+    try {
+      await _storage.write(key: _userEmailKey, value: email);
+    } catch (_) {}
+  }
+
+  Future<String?> getUserEmail() async {
+    try {
+      return await _storage.read(key: _userEmailKey);
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> clearAll() async {
-    await _storage.deleteAll();
+    try {
+      await _storage.deleteAll();
+    } catch (_) {}
   }
 }

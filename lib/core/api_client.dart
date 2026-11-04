@@ -157,7 +157,19 @@ class ApiClient {
 
     String errorMessage = 'Request failed with status: ${response.statusCode}';
     if (body is Map && body.containsKey('detail')) {
-      errorMessage = body['detail'].toString();
+      final detail = body['detail'];
+      if (detail is List && detail.isNotEmpty) {
+        final first = detail.first;
+        if (first is Map && first.containsKey('msg')) {
+          errorMessage = first['msg'].toString();
+        } else {
+          errorMessage = detail.toString();
+        }
+      } else {
+        errorMessage = detail.toString();
+      }
+    } else if (body is Map && body.containsKey('message')) {
+      errorMessage = body['message'].toString();
     }
 
     throw ApiException(

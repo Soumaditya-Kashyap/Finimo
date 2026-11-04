@@ -6,12 +6,14 @@ import '../theme/app_typography.dart';
 class HouseholdSpaceSection extends StatelessWidget {
   final UserProfileData profile;
   final VoidCallback? onEditFamilyTap;
+  final VoidCallback? onEditCurrencyTap;
   final VoidCallback? onAddMemberTap;
 
   const HouseholdSpaceSection({
     super.key,
     required this.profile,
     this.onEditFamilyTap,
+    this.onEditCurrencyTap,
     this.onAddMemberTap,
   });
 
@@ -34,9 +36,9 @@ class HouseholdSpaceSection extends StatelessWidget {
                 fontWeight: FontWeight.w700,
               ),
             ),
-            Text(
+            const Text(
               'FINIMO CIRCLE',
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'SpaceGrotesk',
                 color: AppColors.primaryFixed,
                 fontSize: 10,
@@ -66,6 +68,7 @@ class HouseholdSpaceSection extends StatelessWidget {
                 icon: Icons.home_outlined,
                 label: 'FAMILY NAME',
                 value: profile.familyEntityName,
+                onTap: onEditFamilyTap,
                 trailingAction: GestureDetector(
                   onTap: onEditFamilyTap,
                   child: Container(
@@ -91,12 +94,20 @@ class HouseholdSpaceSection extends StatelessWidget {
                 iconColor: AppColors.tertiaryFixed,
                 label: 'CURRENCY & TIMEZONE',
                 value: profile.localeAndBasis,
-                trailingAction: const Padding(
-                  padding: EdgeInsets.all(8),
-                  child: Icon(
-                    Icons.lock_outline_rounded,
-                    size: 16,
-                    color: AppColors.textMuted,
+                onTap: onEditCurrencyTap,
+                trailingAction: GestureDetector(
+                  onTap: onEditCurrencyTap,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface03.withValues(alpha: 0.6),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.edit_outlined,
+                      size: 16,
+                      color: AppColors.textMuted,
+                    ),
                   ),
                 ),
               ),
@@ -156,7 +167,7 @@ class HouseholdSpaceSection extends StatelessWidget {
                             ],
                           ),
                         ),
-                        // Single Mode Tag
+                        // Role / Scope Tag
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 9,
@@ -235,60 +246,65 @@ class HouseholdSpaceSection extends StatelessWidget {
     Color iconColor = AppColors.textPrimary,
     required String label,
     required String value,
+    VoidCallback? onTap,
     Widget? trailingAction,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface02,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.04),
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface02,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.04),
+          ),
         ),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: AppColors.surface03,
-              borderRadius: BorderRadius.circular(10),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.surface03,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                icon,
+                size: 20,
+                color: iconColor,
+              ),
             ),
-            child: Icon(
-              icon,
-              size: 20,
-              color: iconColor,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: AppTypography.caption(
-                    color: AppColors.textMuted,
-                  ).copyWith(
-                    fontSize: 10,
-                    letterSpacing: 1.0,
-                    fontWeight: FontWeight.w600,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: AppTypography.caption(
+                      color: AppColors.textMuted,
+                    ).copyWith(
+                      fontSize: 10,
+                      letterSpacing: 1.0,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  value,
-                  style: AppTypography.headlineSm(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w700,
-                  ).copyWith(fontSize: 16),
-                ),
-              ],
+                  const SizedBox(height: 3),
+                  Text(
+                    value,
+                    style: AppTypography.headlineSm(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ).copyWith(fontSize: 16),
+                  ),
+                ],
+              ),
             ),
-          ),
-          ?trailingAction,
-        ],
+            ?trailingAction,
+          ],
+        ),
       ),
     );
   }

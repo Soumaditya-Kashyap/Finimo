@@ -1,4 +1,5 @@
 import '../models/user_profile_data.dart';
+export 'http_auth_repository.dart';
 
 abstract class AuthRepository {
   Future<UserProfileData?> checkCurrentSession();
@@ -13,12 +14,16 @@ abstract class AuthRepository {
     required String householdSpaceName,
   });
   Future<void> logout();
+  Future<UserProfileData> getCurrentProfile();
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  });
 }
 
 class MockAuthRepository implements AuthRepository {
   @override
   Future<UserProfileData?> checkCurrentSession() async {
-    // Return null so user arrives on Auth screen on launch
     return null;
   }
 
@@ -27,7 +32,6 @@ class MockAuthRepository implements AuthRepository {
     required String email,
     required String password,
   }) async {
-    // TODO: Replace with real POST /api/v1/auth/login
     await Future.delayed(const Duration(milliseconds: 300));
     return const UserProfileData(
       fullName: 'Arpa Roy',
@@ -36,12 +40,12 @@ class MockAuthRepository implements AuthRepository {
       roleBadge: 'ADMIN / OWNER',
       isVerified: true,
       finimoId: '#8841',
-      syncState: 'Live Core',
-      sessionNode: 'Mobile · In-Auth',
+      syncState: 'Active',
+      sessionNode: 'Mobile App',
       familyEntityName: 'Roy Family',
       localeAndBasis: 'INR (₹) · Asia/Kolkata',
-      accessScope: '1 Active Member',
-      accessScopeBadge: 'Single Mode',
+      accessScope: '1 Member',
+      accessScopeBadge: 'Primary Admin',
       biometricSecurityEnabled: true,
       appVersion: 'FINIMO v1.0.0',
       appPhase: '(Phase 1 MVP)',
@@ -55,7 +59,6 @@ class MockAuthRepository implements AuthRepository {
     required String password,
     required String householdSpaceName,
   }) async {
-    // TODO: Replace with real POST /api/v1/auth/register
     await Future.delayed(const Duration(milliseconds: 300));
     return UserProfileData(
       fullName: fullName.isEmpty ? 'Arpa Roy' : fullName,
@@ -66,13 +69,13 @@ class MockAuthRepository implements AuthRepository {
       roleBadge: 'ADMIN / OWNER',
       isVerified: true,
       finimoId: '#8841',
-      syncState: 'Live Core',
-      sessionNode: 'Mobile · In-Auth',
+      syncState: 'Active',
+      sessionNode: 'Mobile App',
       familyEntityName:
           householdSpaceName.isEmpty ? 'Roy Family' : householdSpaceName,
       localeAndBasis: 'INR (₹) · Asia/Kolkata',
-      accessScope: '1 Active Member',
-      accessScopeBadge: 'Single Mode',
+      accessScope: '1 Member',
+      accessScopeBadge: 'Primary Admin',
       biometricSecurityEnabled: true,
       appVersion: 'FINIMO v1.0.0',
       appPhase: '(Phase 1 MVP)',
@@ -81,7 +84,35 @@ class MockAuthRepository implements AuthRepository {
 
   @override
   Future<void> logout() async {
-    // TODO: Clear local session tokens
     await Future.delayed(const Duration(milliseconds: 150));
+  }
+
+  @override
+  Future<UserProfileData> getCurrentProfile() async {
+    return const UserProfileData(
+      fullName: 'Arpa Roy',
+      email: 'arpa.roy@gmail.com',
+      initials: 'AR',
+      roleBadge: 'ADMIN / OWNER',
+      isVerified: true,
+      finimoId: '#8841',
+      syncState: 'Active',
+      sessionNode: 'Mobile App',
+      familyEntityName: 'Roy Family',
+      localeAndBasis: 'INR (₹) · Asia/Kolkata',
+      accessScope: '1 Member',
+      accessScopeBadge: 'Primary Admin',
+      biometricSecurityEnabled: true,
+      appVersion: 'FINIMO v1.0.0',
+      appPhase: '(Phase 1 MVP)',
+    );
+  }
+
+  @override
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 300));
   }
 }

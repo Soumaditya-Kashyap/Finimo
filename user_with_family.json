@@ -1,0 +1,85 @@
+{
+  "status": "success",
+  "description": "User created with family profile and active family members roster.",
+  "auth_credentials": {
+    "email": "arjun.mehta@example.com",
+    "password": "Password@12345"
+  },
+  "tokens": {
+    "access_token": "eyJhbGciOiJIUzI1NiIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJpc3MiOiJmaW5pbW8iLCJhdWQiOiJmaW5pbW8tYXBpIiwic3ViIjoiZjgwOTkzZmQtYzcxNS00YjgyLWE4ZmEtNmJmZTNlOWU3OWZlIiwiZmlkIjoiMWUwODY3NzAtODVlYi00NzVmLWFkM2EtMGUxYTY3YWMxNjQxIiwibWlkIjoiMWMwMDUxODMtYjJjNS00NDcxLTgwYjAtMjE3OTQ0MDU2ZTc2Iiwicm9sZSI6Ik9XTkVSIiwidHlwIjoiYWNjZXNzIiwianRpIjoiOTZhMmU4NDMtN2UwYS00M2Y3LWE0YzAtYzhjZGIwODY2OTAwIiwiaWF0IjoxNzkyMDEzMjQzLCJleHAiOjE3OTIwMTQxNDN9.Z98mAT7XRf0y37xenRNloUlrm50aYBHVS43H19ntK9U",
+    "refresh_token": "lwhJAmbzAS4bwOxsUzG75EM321OIwHuEFtuFeGOoV04",
+    "expires_in": 900
+  },
+  "user": {
+    "id": "f80993fd-c715-4b82-a8fa-6bfe3e9e79fe",
+    "email": "arjun.mehta@example.com",
+    "full_name": "Arjun Mehta",
+    "phone_number": null
+  },
+  "family": {
+    "id": "1e086770-85eb-475f-ad3a-0e1a67ac1641",
+    "family_name": "Mehta Family",
+    "currency": "INR",
+    "timezone": "Asia/Kolkata",
+    "opening_cash_balance": "25000.00",
+    "owner_user_id": "f80993fd-c715-4b82-a8fa-6bfe3e9e79fe",
+    "members_count": 4,
+    "active_members_count": 4,
+    "created_at": "2026-10-14T21:09:29.949808Z",
+    "updated_at": "2026-10-14T21:19:29.203527Z"
+  },
+  "members": [
+    {
+      "id": "1c005183-b2c5-4471-80b0-217944056e76",
+      "family_id": "1e086770-85eb-475f-ad3a-0e1a67ac1641",
+      "user_id": "f80993fd-c715-4b82-a8fa-6bfe3e9e79fe",
+      "name": "Arjun Mehta",
+      "relation_type": "SELF",
+      "role": "OWNER",
+      "avatar_url": null,
+      "is_active": true,
+      "status": "ACTIVE",
+      "joined_at": "2026-10-14T21:09:47.362107Z",
+      "created_at": "2026-10-14T21:09:29.949808Z"
+    },
+    {
+      "id": "65cd74e7-9da2-4c0b-a2d9-258dc615ac42",
+      "family_id": "1e086770-85eb-475f-ad3a-0e1a67ac1641",
+      "user_id": null,
+      "name": "Priya Mehta",
+      "relation_type": "SPOUSE",
+      "role": null,
+      "avatar_url": null,
+      "is_active": true,
+      "status": "DEPENDENT",
+      "joined_at": null,
+      "created_at": "2026-10-14T21:12:02.442129Z"
+    },
+    {
+      "id": "e82a1a3d-eb86-463f-a4a8-2749ac8f327a",
+      "family_id": "1e086770-85eb-475f-ad3a-0e1a67ac1641",
+      "user_id": null,
+      "name": "Aarav Mehta",
+      "relation_type": "CHILD",
+      "role": null,
+      "avatar_url": null,
+      "is_active": true,
+      "status": "DEPENDENT",
+      "joined_at": null,
+      "created_at": "2026-10-14T21:12:05.521674Z"
+    },
+    {
+      "id": "af638be8-ec5d-4ca9-bb41-a082bf0241fd",
+      "family_id": "1e086770-85eb-475f-ad3a-0e1a67ac1641",
+      "user_id": null,
+      "name": "Ramesh Mehta",
+      "relation_type": "PARENT",
+      "role": null,
+      "avatar_url": null,
+      "is_active": true,
+      "status": "DEPENDENT",
+      "joined_at": null,
+      "created_at": "2026-10-14T21:12:08.337114Z"
+    }
+  ]
+}

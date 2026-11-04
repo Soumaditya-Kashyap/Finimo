@@ -22,12 +22,19 @@ void main() {
 }
 
 class FinimoApp extends StatelessWidget {
-  const FinimoApp({super.key});
+  final AuthRepository? authRepository;
+  final HomeRepository? homeRepository;
+
+  const FinimoApp({
+    super.key,
+    this.authRepository,
+    this.homeRepository,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final homeRepository = MockHomeRepository();
-    final authRepository = MockAuthRepository();
+    final effectiveHomeRepository = homeRepository ?? MockHomeRepository();
+    final effectiveAuthRepository = authRepository ?? HttpAuthRepository();
 
     return MaterialApp(
       title: 'FINIMO',
@@ -44,8 +51,8 @@ class FinimoApp extends StatelessWidget {
         ),
       ),
       home: SplashScreen(
-        authRepository: authRepository,
-        homeRepository: homeRepository,
+        authRepository: effectiveAuthRepository,
+        homeRepository: effectiveHomeRepository,
       ),
     );
   }

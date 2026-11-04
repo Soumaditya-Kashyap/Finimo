@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/api_client.dart';
 import '../services/auth_repository.dart';
 import '../services/home_repository.dart';
 import '../theme/app_colors.dart';
@@ -41,14 +42,10 @@ class _AuthScreenState extends State<AuthScreen> {
   void initState() {
     super.initState();
     _currentMode = widget.initialMode;
-    _nameController = TextEditingController(text: 'Arpa Roy');
-    _emailController = TextEditingController(
-      text: _currentMode == AuthMode.login
-          ? 'arpa.roy@example.com'
-          : 'arpa.roy@gmail.com',
-    );
-    _passwordController = TextEditingController(text: 'supersecurepassword');
-    _spaceNameController = TextEditingController(text: 'Roy Family');
+    _nameController = TextEditingController();
+    _emailController = TextEditingController();
+    _passwordController = TextEditingController();
+    _spaceNameController = TextEditingController();
   }
 
   @override
@@ -63,34 +60,86 @@ class _AuthScreenState extends State<AuthScreen> {
   void _switchMode(AuthMode mode) {
     setState(() {
       _currentMode = mode;
-      if (_currentMode == AuthMode.login) {
-        if (_emailController.text == 'arpa.roy@gmail.com') {
-          _emailController.text = 'arpa.roy@example.com';
-        }
-      } else {
-        if (_emailController.text == 'arpa.roy@example.com') {
-          _emailController.text = 'arpa.roy@gmail.com';
-        }
-      }
     });
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: AppTypography.caption(color: Colors.white).copyWith(
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+          ),
+        ),
+        backgroundColor: AppColors.dangerCoral,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        duration: const Duration(seconds: 4),
+      ),
+    );
   }
 
   Future<void> _handleSubmit() async {
     if (_isLoading) return;
+
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (_currentMode == AuthMode.login) {
+      if (email.isEmpty) {
+        _showError('Please enter your email address');
+        return;
+      }
+      if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email)) {
+        _showError('Please enter a valid email address');
+        return;
+      }
+      if (password.isEmpty) {
+        _showError('Please enter your password');
+        return;
+      }
+    } else {
+      final name = _nameController.text.trim();
+
+      if (name.isEmpty) {
+        _showError('Please enter your full name');
+        return;
+      }
+      if (email.isEmpty) {
+        _showError('Please enter your email address');
+        return;
+      }
+      if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email)) {
+        _showError('Please enter a valid email address');
+        return;
+      }
+      if (password.length < 10) {
+        _showError('Password must be at least 10 characters');
+        return;
+      }
+      if (!_agreedToTerms) {
+        _showError('Please agree to the Terms of Service & Privacy Policy');
+        return;
+      }
+    }
 
     setState(() => _isLoading = true);
 
     try {
       if (_currentMode == AuthMode.login) {
         await widget.authRepository.login(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
+          email: email,
+          password: password,
         );
       } else {
         await widget.authRepository.registerAndCreateSpace(
           fullName: _nameController.text.trim(),
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
+          email: email,
+          password: password,
           householdSpaceName: _spaceNameController.text.trim(),
         );
       }
@@ -108,6 +157,10 @@ class _AuthScreenState extends State<AuthScreen> {
           },
         ),
       );
+    } on ApiException catch (e) {
+      _showError(e.message);
+    } catch (e) {
+      _showError('Authentication failed: ');
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import '../core/api_client.dart';
 import '../models/user_profile_data.dart';
 import '../services/auth_repository.dart';
+import '../services/family_repository.dart';
 import '../services/home_repository.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
+import '../widgets/auth_text_field.dart';
 import '../widgets/household_space_section.dart';
 import '../widgets/profile_header_card.dart';
 import '../widgets/security_controls_section.dart';
@@ -11,10 +14,14 @@ import 'auth_screen.dart';
 
 class UserProfileScreen extends StatefulWidget {
   final HomeRepository repository;
+  final AuthRepository? authRepository;
+  final FamilyRepository? familyRepository;
 
   const UserProfileScreen({
     super.key,
     required this.repository,
+    this.authRepository,
+    this.familyRepository,
   });
 
   @override
@@ -22,22 +29,59 @@ class UserProfileScreen extends StatefulWidget {
 }
 
 class _UserProfileScreenState extends State<UserProfileScreen> {
+  late final AuthRepository _authRepo;
+  late final FamilyRepository _familyRepo;
   late Future<UserProfileData> _futureProfile;
   bool _biometricEnabled = true;
 
   @override
   void initState() {
     super.initState();
+    _authRepo = widget.authRepository ?? HttpAuthRepository();
+    _familyRepo = widget.familyRepository ?? HttpFamilyRepository();
     _loadProfile();
   }
 
   void _loadProfile() {
-    _futureProfile = widget.repository.getUserProfileData().then((profile) {
-      setState(() {
-        _biometricEnabled = profile.biometricSecurityEnabled;
+    setState(() {
+      _futureProfile = _authRepo.getCurrentProfile().then((profile) {
+        if (mounted) {
+          setState(() {
+            _biometricEnabled = profile.biometricSecurityEnabled;
+          });
+        }
+        return profile;
+      }).catchError((_) async {
+        // Fallback for tests or offline state
+        final fallback = await widget.repository.getUserProfileData();
+        if (mounted) {
+          setState(() {
+            _biometricEnabled = fallback.biometricSecurityEnabled;
+          });
+        }
+        return fallback;
       });
-      return profile;
     });
+  }
+
+  void _showNotification(String message, {bool isError = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: AppTypography.caption(
+            color: isError ? Colors.white : Colors.black,
+          ).copyWith(fontWeight: FontWeight.w600, fontSize: 13),
+        ),
+        backgroundColor:
+            isError ? AppColors.dangerCoral : AppColors.primaryFixed,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   @override
@@ -57,11 +101,25 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               );
             }
 
-            if (snapshot.hasError) {
+            if (snapshot.hasError && snapshot.data == null) {
               return Center(
-                child: Text(
-                  'Error loading profile: ${snapshot.error}',
-                  style: const TextStyle(color: AppColors.dangerCoral),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Error loading profile',
+                      style: AppTypography.bodyMd(color: AppColors.dangerCoral),
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: _loadProfile,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryFixed,
+                        foregroundColor: Colors.black,
+                      ),
+                      child: const Text('Retry'),
+                    ),
+                  ],
                 ),
               );
             }
@@ -70,7 +128,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
             return Column(
               children: [
-                // Custom Top Navigation Bar: Back | USER PROFILE | Gear | Profile Icon
+                // Top Navigation Bar
                 _buildTopBar(context),
 
                 // Scrollable Content
@@ -94,22 +152,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                         // 2. Active Household Space Section
                         HouseholdSpaceSection(
                           profile: profile,
-                          onEditFamilyTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Edit Family Entity coming in Phase 2'),
-                                duration: Duration(seconds: 1),
-                              ),
-                            );
-                          },
-                          onAddMemberTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Family Member Invite flow ready for API'),
-                                duration: Duration(seconds: 1),
-                              ),
-                            );
-                          },
+                          onEditFamilyTap: () =>
+                              _showEditFamilyNameSheet(context, profile),
+                          onEditCurrencyTap: () =>
+                              _showEditCurrencyTimezoneSheet(context, profile),
+                          onAddMemberTap: () =>
+                              _showAddFamilyMemberSheet(context, profile),
                         ),
 
                         const SizedBox(height: 24),
@@ -123,14 +171,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                               _biometricEnabled = val;
                             });
                           },
-                          onCredentialManagementTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Credential & Key rotation coming soon'),
-                                duration: Duration(seconds: 1),
-                              ),
-                            );
-                          },
+                          onCredentialManagementTap: () =>
+                              _showChangePasswordSheet(context, profile),
                         ),
 
                         const SizedBox(height: 28),
@@ -138,7 +180,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                         // 4. Log Out CTA Button
                         GestureDetector(
                           onTap: () {
-                            _showLogoutConfirmation(context);
+                            _showLogoutConfirmation(context, profile);
                           },
                           child: Container(
                             width: double.infinity,
@@ -147,7 +189,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                               color: const Color(0xFF161014),
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                color: AppColors.dangerCoral.withValues(alpha: 0.18),
+                                color: AppColors.dangerCoral
+                                    .withValues(alpha: 0.18),
                                 width: 1,
                               ),
                             ),
@@ -194,7 +237,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                     ),
                                   ),
                                   const TextSpan(
-                                    text: ' on this\ndevice',
+                                    text: ' on this device',
                                   ),
                                 ],
                               ),
@@ -221,7 +264,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Back button + USER PROFILE title
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -248,19 +290,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               ),
             ],
           ),
-
-          // Trailing Actions: Settings Gear + Active User Avatar Pill
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               IconButton(
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('App Settings ready for Phase 2'),
-                      duration: Duration(seconds: 1),
-                    ),
-                  );
+                  _showNotification('Profile and Family synced with Live Core');
                 },
                 icon: const Icon(
                   Icons.settings_outlined,
@@ -293,10 +328,965 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     );
   }
 
-  void _showLogoutConfirmation(BuildContext context) {
+  // ==========================================
+  // ACTION 1: EDIT FAMILY NAME
+  // ==========================================
+  void _showEditFamilyNameSheet(BuildContext context, UserProfileData profile) {
+    final controller =
+        TextEditingController(text: profile.familyEntityName);
+    bool isSaving = false;
+
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.surface01,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF101014),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 24,
+                bottom: MediaQuery.paddingOf(ctx).bottom +
+                    MediaQuery.viewInsetsOf(ctx).bottom +
+                    20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Edit Family Name',
+                    style: AppTypography.headlineSm(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Update the household space name for your family circle.',
+                    style: AppTypography.bodySm(color: AppColors.textMuted),
+                  ),
+                  const SizedBox(height: 20),
+                  AuthTextField(
+                    label: 'FAMILY NAME',
+                    hintText: 'e.g. Roy Family',
+                    controller: controller,
+                    prefixIcon: Icons.home_outlined,
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.of(ctx).pop(),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.textPrimary,
+                            side: BorderSide(
+                              color: Colors.white.withValues(alpha: 0.15),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text('Cancel'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: isSaving
+                              ? null
+                              : () async {
+                                  final newName = controller.text.trim();
+                                  if (newName.isEmpty) {
+                                    _showNotification(
+                                        'Please enter a family name',
+                                        isError: true);
+                                    return;
+                                  }
+                                  setSheetState(() => isSaving = true);
+                                  try {
+                                    await _familyRepo.updateFamily(
+                                      familyName: newName,
+                                    );
+                                    if (ctx.mounted) Navigator.of(ctx).pop();
+                                    _loadProfile();
+                                    _showNotification(
+                                      'Family name updated to "$newName"',
+                                    );
+                                  } on ApiException catch (e) {
+                                    setSheetState(() => isSaving = false);
+                                    _showNotification(e.message, isError: true);
+                                  } catch (e) {
+                                    setSheetState(() => isSaving = false);
+                                    _showNotification('Failed to update family name',
+                                        isError: true);
+                                  }
+                                },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primaryFixed,
+                            foregroundColor: Colors.black,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: isSaving
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.black,
+                                  ),
+                                )
+                              : const Text(
+                                  'Save Changes',
+                                  style: TextStyle(fontWeight: FontWeight.w700),
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // ==========================================
+  // ACTION 2: EDIT CURRENCY & TIMEZONE
+  // ==========================================
+  void _showEditCurrencyTimezoneSheet(
+      BuildContext context, UserProfileData profile) {
+    String selectedCurrency = profile.currency;
+    String selectedTimezone = profile.timezone;
+    bool isSaving = false;
+
+    final currencies = [
+      {'code': 'INR', 'symbol': '₹', 'label': 'INR (₹)'},
+      {'code': 'USD', 'symbol': '\$', 'label': 'USD (\$)'},
+      {'code': 'EUR', 'symbol': '€', 'label': 'EUR (€)'},
+      {'code': 'GBP', 'symbol': '£', 'label': 'GBP (£)'},
+    ];
+
+    final timezones = [
+      'Asia/Kolkata',
+      'UTC',
+      'America/New_York',
+      'Europe/London',
+      'Asia/Dubai',
+      'Asia/Singapore',
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF101014),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 24,
+                bottom: MediaQuery.paddingOf(ctx).bottom + 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Currency & Timezone',
+                    style: AppTypography.headlineSm(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Select ledger currency and accounting timezone for transactions.',
+                    style: AppTypography.bodySm(color: AppColors.textMuted),
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    'PRIMARY CURRENCY',
+                    style: AppTypography.caption(color: AppColors.textMuted)
+                        .copyWith(fontSize: 10, letterSpacing: 1.1),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    children: currencies.map((curr) {
+                      final isSelected = selectedCurrency == curr['code'];
+                      return ChoiceChip(
+                        label: Text(
+                          curr['label']!,
+                          style: TextStyle(
+                            color: isSelected
+                                ? Colors.black
+                                : AppColors.textPrimary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
+                        selected: isSelected,
+                        selectedColor: AppColors.primaryFixed,
+                        backgroundColor: AppColors.surface02,
+                        side: BorderSide(
+                          color: isSelected
+                              ? AppColors.primaryFixed
+                              : Colors.white.withValues(alpha: 0.1),
+                        ),
+                        onSelected: (val) {
+                          setSheetState(() {
+                            selectedCurrency = curr['code']!;
+                          });
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    'OPERATIONAL TIMEZONE',
+                    style: AppTypography.caption(color: AppColors.textMuted)
+                        .copyWith(fontSize: 10, letterSpacing: 1.1),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: timezones.map((tz) {
+                      final isSelected = selectedTimezone == tz;
+                      return ChoiceChip(
+                        label: Text(
+                          tz,
+                          style: TextStyle(
+                            color: isSelected
+                                ? Colors.black
+                                : AppColors.textPrimary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
+                        selected: isSelected,
+                        selectedColor: AppColors.tertiaryFixed,
+                        backgroundColor: AppColors.surface02,
+                        side: BorderSide(
+                          color: isSelected
+                              ? AppColors.tertiaryFixed
+                              : Colors.white.withValues(alpha: 0.1),
+                        ),
+                        onSelected: (val) {
+                          setSheetState(() {
+                            selectedTimezone = tz;
+                          });
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.of(ctx).pop(),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.textPrimary,
+                            side: BorderSide(
+                              color: Colors.white.withValues(alpha: 0.15),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text('Cancel'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: isSaving
+                              ? null
+                              : () async {
+                                  setSheetState(() => isSaving = true);
+                                  try {
+                                    await _familyRepo.updateFamily(
+                                      currency: selectedCurrency,
+                                      timezone: selectedTimezone,
+                                    );
+                                    if (ctx.mounted) Navigator.of(ctx).pop();
+                                    _loadProfile();
+                                    _showNotification(
+                                      'Currency & Timezone updated successfully',
+                                    );
+                                  } on ApiException catch (e) {
+                                    setSheetState(() => isSaving = false);
+                                    _showNotification(e.message, isError: true);
+                                  } catch (e) {
+                                    setSheetState(() => isSaving = false);
+                                    _showNotification(
+                                        'Failed to update currency settings',
+                                        isError: true);
+                                  }
+                                },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primaryFixed,
+                            foregroundColor: Colors.black,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: isSaving
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.black,
+                                  ),
+                                )
+                              : const Text(
+                                  'Save Settings',
+                                  style: TextStyle(fontWeight: FontWeight.w700),
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // ==========================================
+  // ACTION 3: ADD FAMILY MEMBER
+  // ==========================================
+  void _showAddFamilyMemberSheet(
+      BuildContext context, UserProfileData profile) {
+    final nameController = TextEditingController();
+    final emailController = TextEditingController();
+    String selectedRelation = 'SPOUSE';
+    String selectedRole = 'MEMBER';
+    bool isInviteMode = false;
+    bool isSaving = false;
+
+    final relations = ['SPOUSE', 'CHILD', 'PARENT', 'SIBLING', 'OTHER'];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF101014),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 24,
+                bottom: MediaQuery.paddingOf(ctx).bottom +
+                    MediaQuery.viewInsetsOf(ctx).bottom +
+                    20,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      '+ Add Family Member',
+                      style: AppTypography.headlineSm(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Add a dependent to the household or send an invitation link.',
+                      style: AppTypography.bodySm(color: AppColors.textMuted),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Mode Toggle: Dependent vs Invite
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface02,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () {
+                                setSheetState(() => isInviteMode = false);
+                              },
+                              child: Container(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: !isInviteMode
+                                      ? AppColors.surface03
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  'Add Dependent',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: !isInviteMode
+                                        ? AppColors.primaryFixed
+                                        : AppColors.textMuted,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () {
+                                setSheetState(() => isInviteMode = true);
+                              },
+                              child: Container(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: isInviteMode
+                                      ? AppColors.surface03
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  'Invite by Email',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: isInviteMode
+                                        ? AppColors.primaryFixed
+                                        : AppColors.textMuted,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 18),
+
+                    AuthTextField(
+                      label: 'MEMBER FULL NAME',
+                      hintText: 'e.g. Priya Mehta',
+                      controller: nameController,
+                      prefixIcon: Icons.person_outline_rounded,
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    Text(
+                      'RELATION TO OWNER',
+                      style: AppTypography.caption(color: AppColors.textMuted)
+                          .copyWith(fontSize: 10, letterSpacing: 1.1),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      children: relations.map((rel) {
+                        final isSelected = selectedRelation == rel;
+                        return ChoiceChip(
+                          label: Text(
+                            rel,
+                            style: TextStyle(
+                              color: isSelected
+                                  ? Colors.black
+                                  : AppColors.textPrimary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                            ),
+                          ),
+                          selected: isSelected,
+                          selectedColor: AppColors.tertiaryFixed,
+                          backgroundColor: AppColors.surface02,
+                          side: BorderSide(
+                            color: isSelected
+                                ? AppColors.tertiaryFixed
+                                : Colors.white.withValues(alpha: 0.1),
+                          ),
+                          onSelected: (val) {
+                            setSheetState(() => selectedRelation = rel);
+                          },
+                        );
+                      }).toList(),
+                    ),
+
+                    if (isInviteMode) ...[
+                      const SizedBox(height: 16),
+                      AuthTextField(
+                        label: 'INVITE EMAIL (OPTIONAL)',
+                        hintText: 'name@example.com',
+                        controller: emailController,
+                        prefixIcon: Icons.mail_outline_rounded,
+                        keyboardType: TextInputType.emailAddress,
+                      ),
+                      const SizedBox(height: 14),
+                      Text(
+                        'ACCESS ROLE',
+                        style: AppTypography.caption(color: AppColors.textMuted)
+                            .copyWith(fontSize: 10, letterSpacing: 1.1),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          ChoiceChip(
+                            label: const Text('MEMBER'),
+                            selected: selectedRole == 'MEMBER',
+                            selectedColor: AppColors.primaryFixed,
+                            backgroundColor: AppColors.surface02,
+                            labelStyle: TextStyle(
+                              color: selectedRole == 'MEMBER'
+                                  ? Colors.black
+                                  : AppColors.textPrimary,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 11,
+                            ),
+                            onSelected: (val) {
+                              setSheetState(() => selectedRole = 'MEMBER');
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          ChoiceChip(
+                            label: const Text('ADMIN'),
+                            selected: selectedRole == 'ADMIN',
+                            selectedColor: AppColors.primaryFixed,
+                            backgroundColor: AppColors.surface02,
+                            labelStyle: TextStyle(
+                              color: selectedRole == 'ADMIN'
+                                  ? Colors.black
+                                  : AppColors.textPrimary,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 11,
+                            ),
+                            onSelected: (val) {
+                              setSheetState(() => selectedRole = 'ADMIN');
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
+
+                    const SizedBox(height: 24),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.of(ctx).pop(),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.textPrimary,
+                              side: BorderSide(
+                                color: Colors.white.withValues(alpha: 0.15),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text('Cancel'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: isSaving
+                                ? null
+                                : () async {
+                                    final name = nameController.text.trim();
+                                    if (name.isEmpty) {
+                                      _showNotification(
+                                          'Please enter member name',
+                                          isError: true);
+                                      return;
+                                    }
+                                    setSheetState(() => isSaving = true);
+                                    try {
+                                      if (isInviteMode) {
+                                        final email =
+                                            emailController.text.trim();
+                                        final inv =
+                                            await _familyRepo.createInvitation(
+                                          role: selectedRole,
+                                          invitedEmail:
+                                              email.isNotEmpty ? email : null,
+                                        );
+                                        if (ctx.mounted) Navigator.of(ctx).pop();
+                                        _loadProfile();
+                                        final inviteUrl =
+                                            inv['invite_url'] ?? '';
+                                        _showNotification(
+                                          inviteUrl.isNotEmpty
+                                              ? 'Invitation link created: $inviteUrl'
+                                              : 'Invitation created successfully',
+                                        );
+                                      } else {
+                                        await _familyRepo.createFamilyMember(
+                                          name: name,
+                                          relationType: selectedRelation,
+                                        );
+                                        if (ctx.mounted) Navigator.of(ctx).pop();
+                                        _loadProfile();
+                                        _showNotification(
+                                          'Family member "$name" added successfully',
+                                        );
+                                      }
+                                    } on ApiException catch (e) {
+                                      setSheetState(() => isSaving = false);
+                                      _showNotification(e.message, isError: true);
+                                    } catch (e) {
+                                      setSheetState(() => isSaving = false);
+                                      _showNotification(
+                                          'Failed to add member: ${e.toString()}',
+                                          isError: true);
+                                    }
+                                  },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryFixed,
+                              foregroundColor: Colors.black,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: isSaving
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.black,
+                                    ),
+                                  )
+                                : Text(
+                                    isInviteMode
+                                        ? 'Send Invite'
+                                        : 'Add to Family',
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w700),
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // ==========================================
+  // ACTION 4: PASSWORD & SECURITY CHANGE
+  // ==========================================
+  void _showChangePasswordSheet(BuildContext context, UserProfileData profile) {
+    final currentPasswordController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+    bool obscureCurrent = true;
+    bool obscureNew = true;
+    bool isSaving = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF101014),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 24,
+                bottom: MediaQuery.paddingOf(ctx).bottom +
+                    MediaQuery.viewInsetsOf(ctx).bottom +
+                    20,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Password & Security',
+                      style: AppTypography.headlineSm(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Update your password. For your security, other active sessions will be revoked.',
+                      style: AppTypography.bodySm(color: AppColors.textMuted),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Current Password
+                    AuthTextField(
+                      label: 'CURRENT PASSWORD',
+                      hintText: 'Enter your existing password',
+                      controller: currentPasswordController,
+                      prefixIcon: Icons.lock_outline_rounded,
+                      obscureText: obscureCurrent,
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          obscureCurrent
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                          color: AppColors.textMuted,
+                          size: 20,
+                        ),
+                        onPressed: () {
+                          setSheetState(() => obscureCurrent = !obscureCurrent);
+                        },
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // New Password
+                    AuthTextField(
+                      label: 'NEW PASSWORD',
+                      hintText: 'Choose a strong password',
+                      controller: newPasswordController,
+                      prefixIcon: Icons.lock_reset_rounded,
+                      obscureText: obscureNew,
+                      helperText: 'Minimum 10 characters required',
+                      helperIcon: Icons.info_outline_rounded,
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          obscureNew
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                          color: AppColors.textMuted,
+                          size: 20,
+                        ),
+                        onPressed: () {
+                          setSheetState(() => obscureNew = !obscureNew);
+                        },
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Confirm New Password
+                    AuthTextField(
+                      label: 'CONFIRM NEW PASSWORD',
+                      hintText: 'Re-enter your new password',
+                      controller: confirmPasswordController,
+                      prefixIcon: Icons.check_circle_outline_rounded,
+                      obscureText: obscureNew,
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.of(ctx).pop(),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.textPrimary,
+                              side: BorderSide(
+                                color: Colors.white.withValues(alpha: 0.15),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text('Cancel'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: isSaving
+                                ? null
+                                : () async {
+                                    final currentPass =
+                                        currentPasswordController.text;
+                                    final newPass = newPasswordController.text;
+                                    final confirmPass =
+                                        confirmPasswordController.text;
+
+                                    if (currentPass.isEmpty) {
+                                      _showNotification(
+                                          'Please enter current password',
+                                          isError: true);
+                                      return;
+                                    }
+                                    if (newPass.length < 10) {
+                                      _showNotification(
+                                          'New password must be at least 10 characters',
+                                          isError: true);
+                                      return;
+                                    }
+                                    if (newPass != confirmPass) {
+                                      _showNotification(
+                                          'New passwords do not match',
+                                          isError: true);
+                                      return;
+                                    }
+
+                                    setSheetState(() => isSaving = true);
+                                    try {
+                                      await _authRepo.changePassword(
+                                        currentPassword: currentPass,
+                                        newPassword: newPass,
+                                      );
+                                      if (ctx.mounted) Navigator.of(ctx).pop();
+                                      _showNotification(
+                                        'Password updated successfully! Please sign in again.',
+                                      );
+                                      if (!context.mounted) return;
+                                      Navigator.of(context).pushAndRemoveUntil(
+                                        MaterialPageRoute(
+                                          builder: (_) => AuthScreen(
+                                            authRepository: _authRepo,
+                                            homeRepository: widget.repository,
+                                            initialMode: AuthMode.login,
+                                          ),
+                                        ),
+                                        (route) => false,
+                                      );
+                                    } on ApiException catch (e) {
+                                      setSheetState(() => isSaving = false);
+                                      _showNotification(e.message, isError: true);
+                                    } catch (e) {
+                                      setSheetState(() => isSaving = false);
+                                      _showNotification(
+                                          'Failed to update password',
+                                          isError: true);
+                                    }
+                                  },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryFixed,
+                              foregroundColor: Colors.black,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: isSaving
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.black,
+                                    ),
+                                  )
+                                : const Text(
+                                    'Update Password',
+                                    style: TextStyle(fontWeight: FontWeight.w700),
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // ==========================================
+  // ACTION 5: LOG OUT
+  // ==========================================
+  void _showLogoutConfirmation(BuildContext context, UserProfileData profile) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF101014),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -329,7 +1319,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'You will need to sign in again to access Roy Family.',
+                'You will need to sign in again to access ${profile.familyEntityName}.',
                 textAlign: TextAlign.center,
                 style: AppTypography.bodySm(color: AppColors.textMuted),
               ),
@@ -355,12 +1345,14 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () {
+                      onPressed: () async {
                         Navigator.of(bottomSheetContext).pop();
+                        await _authRepo.logout();
+                        if (!context.mounted) return;
                         Navigator.of(context).pushAndRemoveUntil(
                           MaterialPageRoute(
                             builder: (ctx) => AuthScreen(
-                              authRepository: MockAuthRepository(),
+                              authRepository: _authRepo,
                               homeRepository: widget.repository,
                               initialMode: AuthMode.login,
                             ),

@@ -1,0 +1,74 @@
+name: safe-backend-integration
+
+# Safe, Error-Free Backend Integration Rules
+
+## 1. Source of Truth: openapi.json
+- The `openapi.json` file in the project is the ONLY source of truth for all APIs. Never guess or invent endpoints, request fields, response fields, or status codes.
+- Before integrating any feature, read the relevant endpoint in openapi.json: path, HTTP method, auth requirement, path/query params, request body schema, response schemas, and error responses.
+- If something is unclear or missing in the project, re-read openapi.json instead of assuming.
+- If an endpoint the UI needs does not exist in openapi.json, STOP and report it. Do not fake it and do not keep mock data silently.
+- Build model classes to match the schema field names, types, nullability and enums exactly.
+
+## 2. Strict Safety Boundaries (NEVER VIOLATE)
+- Work ONLY on the frontend/mobile codebase. Do NOT modify backend code, server config, or migrations.
+- NEVER call, write, or trigger anything that deletes, drops, truncates, or resets data or database tables.
+- NEVER call DELETE endpoints, destructive/admin endpoints, or bulk-modify endpoints for testing without explicit written approval from me.
+- During testing, use only safe read (GET) calls. For create/update (POST/PUT/PATCH), ask me first and use test data only.
+- Never hardcode secrets, tokens, API keys, or passwords. Use environment/config files and secure storage.
+- Do not commit or print credentials or tokens in logs.
+- If a task seems to require anything outside these boundaries, STOP and ask.
+
+## 3. Do Not Break the UI
+- The existing UI design is final. Do NOT change layouts, styles, spacing, colors, or widgets while integrating APIs.
+- Only change the data source behind the UI, not how the UI looks.
+- Keep the existing architecture (View -> ViewModel/Provider/BLoC -> Repository -> Data Source). Replace the mock implementation inside repositories/services and do not rewrite the UI layer.
+- If the real API response shape differs from the mock model, adapt it in the model/mapper layer, not in the UI widgets.
+
+## 4. Modular, API-Ready Structure
+- Keep the codebase modular, with one responsibility per file. Never dump everything in one file. Suggested structure:
+  - /core/network: API client, interceptors, base URL config, error handling
+  - /core/config: environment and constants (base URL, timeouts)
+  - /data/models: request and response models matching openapi.json (fromJson/toJson)
+  - /data/datasources: remote data source classes, one per feature
+  - /data/repositories: repository implementations
+  - /domain (or equivalent): repository interfaces
+  - /presentation (or existing UI folders): untouched except for wiring
+- Create one central API client (single place for base URL, headers, auth token, timeout, retry rules). Never scatter raw HTTP calls inside screens or widgets.
+- Keep endpoint paths in one constants file, not as inline strings.
+
+## 5. Standard Integration Procedure (Follow in Order, Per Feature)
+1. Identify the screen and the data it needs.
+2. Find the matching endpoints in openapi.json and list them.
+3. Create or update models from the schema.
+4. Create the remote data source and repository implementation.
+5. Wire the repository into the existing ViewModel/Provider/BLoC.
+6. Handle loading, success, empty, and error states using the existing UI states (do not redesign them).
+7. Test the flow, confirm the screen shows real data, and confirm no UI regressions.
+8. Only after it works, remove that feature's mock data (see section 7).
+- Integrate one feature at a time. Do not mix half-finished features.
+
+## 6. Error Handling and Robustness
+- Handle every documented status code (400, 401, 403, 404, 422, 500, etc.) with user-friendly messages, never raw exceptions.
+- Handle network failure, timeouts, and no-internet cases gracefully.
+- Handle null/missing fields safely, following nullability in the schema.
+- Handle 401 per the project's auth flow (token refresh or redirect to login) as defined in openapi.json.
+- Use typed results (e.g. Success/Failure) instead of letting exceptions leak into the UI.
+- Never swallow errors silently. Log them safely (no sensitive data).
+- Add pagination, filters, and sort params exactly as defined in the spec.
+
+## 7. Mock Data Removal
+- Remove mock data for a feature only AFTER its real API integration is verified working.
+- Delete the unused mock files, dummy constants, mock repositories, and related imports so no dead code remains.
+- Do not leave mock data as a silent fallback in production code paths. If a fallback is needed for dev, keep it behind an explicit debug flag and tell me.
+- Remove the old TODO comments once resolved.
+
+## 8. Code Quality
+- Clean, readable, commented code. Follow existing naming and style conventions.
+- No duplication. Reuse shared components and utilities.
+- Keep functions small and focused.
+- Keep the project compiling with no new warnings or analyzer/lint errors.
+
+## 9. Reporting
+- Before starting, list the screens and the endpoints you plan to integrate, and any gaps or mismatches you find in openapi.json.
+- After each feature, summarize: files created or changed, endpoints used, mock data removed, and anything that needs my decision.
+- If anything is ambiguous, risky, or missing, ask. Do not assume.
