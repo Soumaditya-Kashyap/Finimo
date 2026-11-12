@@ -18,10 +18,14 @@ class ApiException implements Exception {
   String toString() => 'ApiException [$statusCode]: $message';
 }
 
-/// Central HTTP Client with automatic Bearer token injection and JSON serialization
+/// Central HTTP Client with automatic Bearer token injection,
+/// automatic 401 token refresh interceptor, and JSON serialization.
 class ApiClient {
   final TokenStorage tokenStorage;
   final http.Client _httpClient;
+
+  // Single in-flight token refresh future to deduplicate concurrent requests
+  Future<bool>? _refreshFuture;
 
   ApiClient({
     TokenStorage? tokenStorage,
@@ -59,87 +63,190 @@ class ApiClient {
     return headers;
   }
 
-  Future<dynamic> get(
+  Future<dynamic> _sendRequest(
+    String method,
     String path, {
+    dynamic body,
     Map<String, dynamic>? queryParameters,
     bool requiresAuth = true,
   }) async {
     final uri = _buildUri(path, queryParameters);
-    final headers = await _headers(requiresAuth: requiresAuth);
+    var headers = await _headers(requiresAuth: requiresAuth);
 
-    final response = await _httpClient
-        .get(uri, headers: headers)
-        .timeout(ApiConfig.connectTimeout);
+    http.Response response;
+    try {
+      response = await _executeRaw(method, uri, headers, body);
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException(
+        statusCode: 0,
+        message: 'Network connection failed: $e',
+      );
+    }
+
+    // Auto-refresh token if 401 Unauthorized and not already calling refresh
+    if (response.statusCode == 401 &&
+        requiresAuth &&
+        !path.contains(ApiConfig.refreshToken)) {
+      final refreshed = await _refreshToken();
+      if (refreshed) {
+        // Retry the request once with freshly rotated access token
+        headers = await _headers(requiresAuth: true);
+        try {
+          response = await _executeRaw(method, uri, headers, body);
+        } catch (e) {
+          if (e is ApiException) rethrow;
+          throw ApiException(
+            statusCode: 0,
+            message: 'Network retry failed: $e',
+          );
+        }
+      }
+    }
+
     return _handleResponse(response);
   }
+
+  Future<http.Response> _executeRaw(
+    String method,
+    Uri uri,
+    Map<String, String> headers,
+    dynamic body,
+  ) {
+    final encodedBody = body != null ? jsonEncode(body) : null;
+    switch (method.toUpperCase()) {
+      case 'GET':
+        return _httpClient
+            .get(uri, headers: headers)
+            .timeout(ApiConfig.connectTimeout);
+      case 'POST':
+        return _httpClient
+            .post(uri, headers: headers, body: encodedBody)
+            .timeout(ApiConfig.connectTimeout);
+      case 'PUT':
+        return _httpClient
+            .put(uri, headers: headers, body: encodedBody)
+            .timeout(ApiConfig.connectTimeout);
+      case 'PATCH':
+        return _httpClient
+            .patch(uri, headers: headers, body: encodedBody)
+            .timeout(ApiConfig.connectTimeout);
+      case 'DELETE':
+        return _httpClient
+            .delete(uri, headers: headers)
+            .timeout(ApiConfig.connectTimeout);
+      default:
+        throw ApiException(
+            statusCode: 400, message: 'Unsupported method: $method');
+    }
+  }
+
+  Future<bool> _refreshToken() async {
+    if (_refreshFuture != null) {
+      return await _refreshFuture!;
+    }
+    _refreshFuture = _executeRefresh();
+    try {
+      return await _refreshFuture!;
+    } finally {
+      _refreshFuture = null;
+    }
+  }
+
+  Future<bool> _executeRefresh() async {
+    try {
+      final refreshToken = await tokenStorage.getRefreshToken();
+      if (refreshToken == null || refreshToken.isEmpty) {
+        return false;
+      }
+
+      final uri = _buildUri(ApiConfig.refreshToken);
+      final response = await _httpClient.post(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({'refresh_token': refreshToken}),
+      ).timeout(ApiConfig.connectTimeout);
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final data = jsonDecode(response.body);
+        if (data is Map<String, dynamic> && data.containsKey('access_token')) {
+          final newAccess = data['access_token'] as String;
+          final newRefresh =
+              (data['refresh_token'] as String?) ?? refreshToken;
+
+          await tokenStorage.saveTokens(
+            accessToken: newAccess,
+            refreshToken: newRefresh,
+          );
+
+          if (data.containsKey('family') && data['family'] is Map) {
+            final fam = data['family'] as Map<String, dynamic>;
+            if (fam['id'] != null) {
+              await tokenStorage.saveActiveFamilyId(fam['id'].toString());
+            }
+            if (fam['family_name'] != null || fam['name'] != null) {
+              await tokenStorage.saveActiveFamilyName(
+                (fam['family_name'] ?? fam['name']).toString(),
+              );
+            }
+          }
+          return true;
+        }
+      } else if (response.statusCode == 401 ||
+          response.statusCode == 403 ||
+          response.statusCode == 422) {
+        // Refresh token itself is revoked or permanently invalid
+        await tokenStorage.clearAll();
+        return false;
+      }
+    } catch (_) {
+      // Temporary network hitch or timeout: DO NOT clear tokens!
+      return false;
+    }
+    return false;
+  }
+
+  Future<dynamic> get(
+    String path, {
+    Map<String, dynamic>? queryParameters,
+    bool requiresAuth = true,
+  }) =>
+      _sendRequest('GET', path,
+          queryParameters: queryParameters, requiresAuth: requiresAuth);
 
   Future<dynamic> post(
     String path, {
     dynamic body,
     Map<String, dynamic>? queryParameters,
     bool requiresAuth = true,
-  }) async {
-    final uri = _buildUri(path, queryParameters);
-    final headers = await _headers(requiresAuth: requiresAuth);
-
-    final response = await _httpClient
-        .post(
-          uri,
-          headers: headers,
-          body: body != null ? jsonEncode(body) : null,
-        )
-        .timeout(ApiConfig.connectTimeout);
-    return _handleResponse(response);
-  }
+  }) =>
+      _sendRequest('POST', path,
+          body: body,
+          queryParameters: queryParameters,
+          requiresAuth: requiresAuth);
 
   Future<dynamic> put(
     String path, {
     dynamic body,
     bool requiresAuth = true,
-  }) async {
-    final uri = _buildUri(path);
-    final headers = await _headers(requiresAuth: requiresAuth);
-
-    final response = await _httpClient
-        .put(
-          uri,
-          headers: headers,
-          body: body != null ? jsonEncode(body) : null,
-        )
-        .timeout(ApiConfig.connectTimeout);
-    return _handleResponse(response);
-  }
+  }) =>
+      _sendRequest('PUT', path, body: body, requiresAuth: requiresAuth);
 
   Future<dynamic> patch(
     String path, {
     dynamic body,
     bool requiresAuth = true,
-  }) async {
-    final uri = _buildUri(path);
-    final headers = await _headers(requiresAuth: requiresAuth);
-
-    final response = await _httpClient
-        .patch(
-          uri,
-          headers: headers,
-          body: body != null ? jsonEncode(body) : null,
-        )
-        .timeout(ApiConfig.connectTimeout);
-    return _handleResponse(response);
-  }
+  }) =>
+      _sendRequest('PATCH', path, body: body, requiresAuth: requiresAuth);
 
   Future<dynamic> delete(
     String path, {
     bool requiresAuth = true,
-  }) async {
-    final uri = _buildUri(path);
-    final headers = await _headers(requiresAuth: requiresAuth);
-
-    final response = await _httpClient
-        .delete(uri, headers: headers)
-        .timeout(ApiConfig.connectTimeout);
-    return _handleResponse(response);
-  }
+  }) =>
+      _sendRequest('DELETE', path, requiresAuth: requiresAuth);
 
   dynamic _handleResponse(http.Response response) {
     dynamic body;
@@ -158,18 +265,23 @@ class ApiClient {
     String errorMessage = 'Request failed with status: ${response.statusCode}';
     if (body is Map && body.containsKey('detail')) {
       final detail = body['detail'];
-      if (detail is List && detail.isNotEmpty) {
+      if (detail is String) {
+        errorMessage = detail;
+      } else if (detail is List && detail.isNotEmpty) {
         final first = detail.first;
         if (first is Map && first.containsKey('msg')) {
           errorMessage = first['msg'].toString();
-        } else {
-          errorMessage = detail.toString();
         }
-      } else {
-        errorMessage = detail.toString();
       }
     } else if (body is Map && body.containsKey('message')) {
       errorMessage = body['message'].toString();
+    } else if (body is Map && body.containsKey('error')) {
+      final error = body['error'];
+      if (error is Map && error.containsKey('message')) {
+        errorMessage = error['message'].toString();
+      } else if (error is String) {
+        errorMessage = error;
+      }
     }
 
     throw ApiException(

@@ -45,6 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
   late final TransactionRepository _transactionRepo;
 
   late Future<_HomeScreenData> _futureData;
+  _HomeScreenData? _lastLoadedData;
   String _selectedFamilyScope = 'Family (All)';
   String? _selectedMemberId;
 
@@ -62,24 +63,44 @@ class _HomeScreenState extends State<HomeScreen> {
   void _loadData({String? selectedMemberId}) {
     setState(() {
       _futureData = Future.wait([
-        _familyRepo
-            .getFamilyMembers()
-            .catchError((_) => widget.repository.getFamilyMembers()),
+        _familyRepo.getFamilyMembers().catchError((_) async {
+          if (_lastLoadedData != null && _lastLoadedData!.members.isNotEmpty) {
+            return _lastLoadedData!.members;
+          }
+          return widget.repository.getFamilyMembers();
+        }),
         _dashboardRepo
             .getDashboardMetrics(memberId: selectedMemberId)
-            .catchError((_) => widget.repository.getDashboardMetrics()),
-        _dashboardRepo
-            .getActiveConjoinedEvent()
-            .catchError((_) => widget.repository.getActiveConjoinedEvent()),
+            .catchError((_) async {
+          if (_lastLoadedData != null) {
+            return _lastLoadedData!.dashboard;
+          }
+          return widget.repository.getDashboardMetrics();
+        }),
+        _dashboardRepo.getActiveConjoinedEvent().catchError((_) async {
+          if (_lastLoadedData != null) {
+            return _lastLoadedData!.activeEvent;
+          }
+          return widget.repository.getActiveConjoinedEvent();
+        }),
         _transactionRepo
             .getRecentTransactions(limit: 5, memberId: selectedMemberId)
-            .catchError((_) => widget.repository.getRecentFlows()),
-      ]).then((results) => _HomeScreenData(
-            members: results[0] as List<FamilyMember>,
-            dashboard: results[1] as HomeDashboardData,
-            activeEvent: results[2] as ConjoinedEventSummary?,
-            recentFlows: results[3] as List<TransactionItem>,
-          ));
+            .catchError((_) async {
+          if (_lastLoadedData != null) {
+            return _lastLoadedData!.recentFlows;
+          }
+          return widget.repository.getRecentFlows();
+        }),
+      ]).then((results) {
+        final data = _HomeScreenData(
+          members: results[0] as List<FamilyMember>,
+          dashboard: results[1] as HomeDashboardData,
+          activeEvent: results[2] as ConjoinedEventSummary?,
+          recentFlows: results[3] as List<TransactionItem>,
+        );
+        _lastLoadedData = data;
+        return data;
+      });
     });
   }
 

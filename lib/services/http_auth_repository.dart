@@ -18,59 +18,60 @@ class HttpAuthRepository implements AuthRepository {
   @override
   Future<UserProfileData?> checkCurrentSession() async {
     try {
-      final accessToken = await tokenStorage.getAccessToken();
-      if (accessToken == null || accessToken.isEmpty) {
+      final hasSession = await tokenStorage.hasValidSession();
+      if (!hasSession) {
         return null;
       }
 
-      // 1. Verify current session and get full profile
+      // Check for locally cached profile first
+      final cachedJson = await tokenStorage.getCachedUserProfile();
+      UserProfileData? cachedProfile;
+      if (cachedJson != null) {
+        try {
+          cachedProfile = UserProfileData.fromJson(cachedJson);
+        } catch (_) {}
+      }
+
+      // 1. Try to fetch fresh profile from API
+      // (ApiClient will automatically refresh tokens if access token expired!)
       try {
-        return await getCurrentProfile();
-      } on ApiException catch (e) {
-        // If access token is expired (401), attempt refresh
-        if (e.statusCode == 401) {
-          final refreshedProfile = await _attemptTokenRefresh();
-          if (refreshedProfile != null) {
-            return refreshedProfile;
-          }
+        final freshProfile = await getCurrentProfile();
+        return freshProfile;
+      } catch (e) {
+        // Check if tokenStorage was cleared due to permanent revocation (401/403 on refresh)
+        final stillHasSession = await tokenStorage.hasValidSession();
+        if (!stillHasSession) {
+          return null;
         }
-        // Session invalid
-        await tokenStorage.clearAll();
-        return null;
+
+        // On network error or server drop, KEEP user logged in with cached profile!
+        if (cachedProfile != null) {
+          return cachedProfile;
+        }
+
+        final email = await tokenStorage.getUserEmail() ?? 'User';
+        final familyName = await tokenStorage.getActiveFamilyName() ?? 'Family';
+        return UserProfileData(
+          fullName: email.contains('@') ? email.split('@').first : email,
+          email: email,
+          initials: email.isNotEmpty ? email[0].toUpperCase() : 'U',
+          roleBadge: 'MEMBER',
+          isVerified: true,
+          finimoId: '#8841',
+          syncState: 'Active',
+          sessionNode: 'Mobile App',
+          familyEntityName: familyName,
+          localeAndBasis: 'INR (₹) · Asia/Kolkata',
+          accessScope: 'Family',
+          accessScopeBadge: 'Active Member',
+          biometricSecurityEnabled: true,
+          appVersion: 'FINIMO v1.0.0',
+          appPhase: '(Phase 1 MVP)',
+        );
       }
     } catch (_) {
-      // In case of network drops or unexpected issues during boot
       return null;
     }
-  }
-
-  Future<UserProfileData?> _attemptTokenRefresh() async {
-    try {
-      final refreshToken = await tokenStorage.getRefreshToken();
-      if (refreshToken == null || refreshToken.isEmpty) {
-        return null;
-      }
-
-      final response = await apiClient.post(
-        ApiConfig.refreshToken,
-        body: {'refresh_token': refreshToken},
-        requiresAuth: false,
-      );
-
-      if (response is Map<String, dynamic> &&
-          response.containsKey('access_token')) {
-        await tokenStorage.saveTokens(
-          accessToken: response['access_token'] as String,
-          refreshToken:
-              (response['refresh_token'] as String?) ?? refreshToken,
-        );
-        _persistFamilyContext(response);
-        return await getCurrentProfile();
-      }
-    } catch (_) {
-      await tokenStorage.clearAll();
-    }
-    return null;
   }
 
   @override
@@ -83,7 +84,8 @@ class HttpAuthRepository implements AuthRepository {
 
     Map<String, dynamic> family = {};
     try {
-      final familyResp = await apiClient.get(ApiConfig.family, requiresAuth: true);
+      final familyResp =
+          await apiClient.get(ApiConfig.family, requiresAuth: true);
       if (familyResp is Map<String, dynamic>) {
         family = familyResp;
       }
@@ -101,7 +103,9 @@ class HttpAuthRepository implements AuthRepository {
     };
 
     _persistFamilyContext(combined);
-    return UserProfileData.fromAuthResponse(combined);
+    final profile = UserProfileData.fromAuthResponse(combined);
+    await tokenStorage.saveCachedUserProfile(profile.toJson());
+    return profile;
   }
 
   @override
@@ -145,11 +149,14 @@ class HttpAuthRepository implements AuthRepository {
       await tokenStorage.saveUserEmail(email.trim());
       _persistFamilyContext(response);
 
-      // Now fetch full profile to ensure all counts are up to date
       try {
-        return await getCurrentProfile();
+        final profile = await getCurrentProfile();
+        await tokenStorage.saveCachedUserProfile(profile.toJson());
+        return profile;
       } catch (_) {
-        return UserProfileData.fromAuthResponse(response);
+        final profile = UserProfileData.fromAuthResponse(response);
+        await tokenStorage.saveCachedUserProfile(profile.toJson());
+        return profile;
       }
     }
 
@@ -197,9 +204,13 @@ class HttpAuthRepository implements AuthRepository {
       _persistFamilyContext(response);
 
       try {
-        return await getCurrentProfile();
+        final profile = await getCurrentProfile();
+        await tokenStorage.saveCachedUserProfile(profile.toJson());
+        return profile;
       } catch (_) {
-        return UserProfileData.fromAuthResponse(response);
+        final profile = UserProfileData.fromAuthResponse(response);
+        await tokenStorage.saveCachedUserProfile(profile.toJson());
+        return profile;
       }
     }
 

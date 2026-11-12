@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/api_client.dart';
+import '../core/token_storage.dart';
 import '../models/user_profile_data.dart';
 import '../services/auth_repository.dart';
 import '../services/family_repository.dart';
@@ -52,6 +53,18 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         }
         return profile;
       }).catchError((_) async {
+        // Prefer locally cached real user profile over mock fallback
+        final cached = await TokenStorage().getCachedUserProfile();
+        if (cached != null) {
+          final cachedProfile = UserProfileData.fromJson(cached);
+          if (mounted) {
+            setState(() {
+              _biometricEnabled = cachedProfile.biometricSecurityEnabled;
+            });
+          }
+          return cachedProfile;
+        }
+
         // Fallback for tests or offline state
         final fallback = await widget.repository.getUserProfileData();
         if (mounted) {

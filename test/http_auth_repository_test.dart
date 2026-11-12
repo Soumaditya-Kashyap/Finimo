@@ -183,6 +183,85 @@ void main() {
       expect(await tokenStorage.getAccessToken(), isNull);
       expect(await tokenStorage.getRefreshToken(), isNull);
     });
+
+    test('ApiClient automatically refreshes token on 401 and retries original request', () async {
+      FlutterSecureStorage.setMockInitialValues({});
+      final tokenStorage = TokenStorage();
+      await tokenStorage.saveTokens(
+        accessToken: 'expired_access_token',
+        refreshToken: 'valid_refresh_token',
+      );
+
+      var meCallCount = 0;
+      var refreshCallCount = 0;
+
+      final mockClient = MockClient((request) async {
+        if (request.url.path.endsWith('/api/v1/auth/me')) {
+          meCallCount++;
+          final authHeader = request.headers['Authorization'] ?? '';
+          if (authHeader.contains('expired_access_token')) {
+            return http.Response(jsonEncode({'detail': 'Token expired'}), 401);
+          }
+          if (authHeader.contains('new_access_token')) {
+            return http.Response(
+              jsonEncode({
+                'user': {'id': 'u1', 'full_name': 'Arjun Mehta', 'email': 'arjun@example.com'},
+                'member_id': 'm1',
+                'role': 'ADMIN',
+              }),
+              200,
+            );
+          }
+        } else if (request.url.path.endsWith('/api/v1/auth/refresh')) {
+          refreshCallCount++;
+          return http.Response(
+            jsonEncode({
+              'access_token': 'new_access_token',
+              'refresh_token': 'new_refresh_token',
+              'family': {'id': 'fam_1', 'family_name': 'Mehta Family'},
+            }),
+            200,
+          );
+        }
+        return http.Response('Not Found', 404);
+      });
+
+      final apiClient = ApiClient(tokenStorage: tokenStorage, httpClient: mockClient);
+      final response = await apiClient.get('/api/v1/auth/me', requiresAuth: true);
+
+      expect(refreshCallCount, 1);
+      expect(meCallCount, 2);
+      expect(response['user']['full_name'], 'Arjun Mehta');
+      expect(await tokenStorage.getAccessToken(), 'new_access_token');
+      expect(await tokenStorage.getRefreshToken(), 'new_refresh_token');
+    });
+
+    test('checkCurrentSession preserves login state using cached profile on offline/network drop', () async {
+      FlutterSecureStorage.setMockInitialValues({});
+      final tokenStorage = TokenStorage();
+      await tokenStorage.saveTokens(
+        accessToken: 'some_access_token',
+        refreshToken: 'some_refresh_token',
+      );
+      await tokenStorage.saveCachedUserProfile({
+        'user': {'id': 'u1', 'full_name': 'Arjun Mehta', 'email': 'arjun@example.com'},
+        'family': {'id': 'f1', 'family_name': 'Mehta Family', 'currency': 'INR', 'timezone': 'Asia/Kolkata'},
+        'member': {'id': 'm1', 'name': 'Arjun Mehta', 'role': 'ADMIN'},
+      });
+
+      // Mock network failure / timeout
+      final mockClient = MockClient((request) async {
+        throw http.ClientException('No Internet');
+      });
+
+      final apiClient = ApiClient(tokenStorage: tokenStorage, httpClient: mockClient);
+      final repo = HttpAuthRepository(apiClient: apiClient, tokenStorage: tokenStorage);
+
+      final session = await repo.checkCurrentSession();
+      expect(session, isNotNull);
+      expect(session!.fullName, 'Arjun Mehta');
+      expect(await tokenStorage.hasValidSession(), isTrue);
+    });
   });
 }
 

@@ -12,6 +12,7 @@ import '../models/deep_dive_models.dart';
 import '../models/user_profile_data.dart';
 import '../models/conjoined_event_detail.dart';
 import '../models/insurance_policy_model.dart';
+import '../core/token_storage.dart';
 import 'package:flutter/material.dart';
 
 abstract class HomeRepository {
@@ -395,7 +396,12 @@ class MockHomeRepository implements HomeRepository {
 
   @override
   Future<UserProfileData> getUserProfileData() async {
-    // TODO: Replace mock data with real API call to GET /api/v1/user/profile & GET /api/v1/family
+    try {
+      final cached = await TokenStorage().getCachedUserProfile();
+      if (cached != null) {
+        return UserProfileData.fromJson(cached);
+      }
+    } catch (_) {}
     return const UserProfileData(
       fullName: 'Arpa Roy',
       email: 'arpa.roy@gmail.com',
