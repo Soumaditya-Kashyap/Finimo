@@ -152,15 +152,17 @@ class RecentFlowsSection extends StatelessWidget {
             ],
           ),
 
-          // Right: Outflow Amount + Member Attribution Tag
+          // Right: Outflow/Inflow Amount + Member Attribution Tag
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                '-${CurrencyFormatter.formatInr(item.amount)}.00',
+                '${item.type == TransactionType.income ? '+' : '-'}${CurrencyFormatter.format(item.amount)}',
                 style: AppTypography.headlineSm(
-                  color: AppColors.dangerCoral,
+                  color: item.type == TransactionType.income
+                      ? AppColors.primaryFixed
+                      : AppColors.dangerCoral,
                   fontWeight: FontWeight.w700,
                 ).copyWith(
                   fontSize: 16,
