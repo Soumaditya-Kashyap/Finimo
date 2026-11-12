@@ -3,16 +3,28 @@ import 'activity_screen.dart';
 import 'deep_dive_screen.dart';
 import 'home_screen.dart';
 import 'targets_screen.dart';
+import '../services/category_repository.dart';
+import '../services/dashboard_repository.dart';
+import '../services/family_repository.dart';
 import '../services/home_repository.dart';
+import '../services/transaction_repository.dart';
 import '../theme/app_colors.dart';
 import '../widgets/finimo_bottom_nav_bar.dart';
 
 class MainNavigationShell extends StatefulWidget {
   final HomeRepository homeRepository;
+  final TransactionRepository? transactionRepository;
+  final FamilyRepository? familyRepository;
+  final CategoryRepository? categoryRepository;
+  final DashboardRepository? dashboardRepository;
 
   const MainNavigationShell({
     super.key,
     required this.homeRepository,
+    this.transactionRepository,
+    this.familyRepository,
+    this.categoryRepository,
+    this.dashboardRepository,
   });
 
   @override
@@ -35,12 +47,21 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
               // Tab 0: Status (Home)
               HomeScreen(
                 repository: widget.homeRepository,
+                dashboardRepository: widget.dashboardRepository,
+                familyRepository: widget.familyRepository,
+                transactionRepository: widget.transactionRepository,
                 onSeeLedgerTap: () {
                   setState(() => _currentIndex = 1);
                 },
               ),
               // Tab 1: Activity
-              ActivityScreen(repository: widget.homeRepository),
+              ActivityScreen(
+                repository: widget.homeRepository,
+                transactionRepository: widget.transactionRepository,
+                familyRepository: widget.familyRepository,
+                categoryRepository: widget.categoryRepository,
+                dashboardRepository: widget.dashboardRepository,
+              ),
               // Tab 2: Targets
               TargetsScreen(
                 repository: widget.homeRepository,

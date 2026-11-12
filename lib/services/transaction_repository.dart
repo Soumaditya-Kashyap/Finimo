@@ -1,3 +1,4 @@
+import '../models/ledger_transaction.dart';
 import '../models/transaction_item.dart';
 export 'http_transaction_repository.dart';
 
@@ -9,11 +10,25 @@ abstract class TransactionRepository {
   });
 
   Future<Map<String, dynamic>> getTransactionsCursor({
-    int limit = 20,
+    int limit = 50,
     String? cursor,
+    int? month,
+    int? year,
     String? memberId,
     String? type,
     String? categoryId,
+    String? eventId,
+  });
+
+  Future<List<LedgerTransaction>> getLedgerTransactions({
+    int limit = 50,
+    String? cursor,
+    int? month,
+    int? year,
+    String? memberId,
+    String? type,
+    String? categoryId,
+    String? eventId,
   });
 
   Future<Map<String, dynamic>> createTransaction({
@@ -85,17 +100,34 @@ class MockTransactionRepository implements TransactionRepository {
 
   @override
   Future<Map<String, dynamic>> getTransactionsCursor({
-    int limit = 20,
+    int limit = 50,
     String? cursor,
+    int? month,
+    int? year,
     String? memberId,
     String? type,
     String? categoryId,
+    String? eventId,
   }) async {
     final list = await getRecentTransactions(limit: limit);
     return {
       'items': list.map((e) => e.toJson()).toList(),
       'next_cursor': null,
     };
+  }
+
+  @override
+  Future<List<LedgerTransaction>> getLedgerTransactions({
+    int limit = 50,
+    String? cursor,
+    int? month,
+    int? year,
+    String? memberId,
+    String? type,
+    String? categoryId,
+    String? eventId,
+  }) async {
+    return const [];
   }
 
   @override
@@ -117,4 +149,3 @@ class MockTransactionRepository implements TransactionRepository {
   @override
   Future<void> deleteTransaction(String transactionId) async {}
 }
-

@@ -17,6 +17,7 @@ import 'package:finimo/services/home_repository.dart';
 import 'package:finimo/services/transaction_repository.dart';
 import 'package:finimo/widgets/beneficiary_chip_selector.dart';
 import 'package:finimo/widgets/paid_by_payer_selector.dart';
+import 'package:finimo/models/ledger_transaction.dart';
 import 'package:finimo/screens/add_expense_income_screen.dart';
 
 class _FakeHomeRepo extends MockHomeRepository {}
@@ -61,13 +62,29 @@ class _RecordingTransactionRepo implements TransactionRepository {
 
   @override
   Future<Map<String, dynamic>> getTransactionsCursor({
-    int limit = 20,
+    int limit = 50,
     String? cursor,
+    int? month,
+    int? year,
     String? memberId,
     String? type,
     String? categoryId,
+    String? eventId,
   }) async =>
       {'items': [], 'next_cursor': null};
+
+  @override
+  Future<List<LedgerTransaction>> getLedgerTransactions({
+    int limit = 50,
+    String? cursor,
+    int? month,
+    int? year,
+    String? memberId,
+    String? type,
+    String? categoryId,
+    String? eventId,
+  }) async =>
+      [];
 
   @override
   Future<void> deleteTransaction(String transactionId) async {}

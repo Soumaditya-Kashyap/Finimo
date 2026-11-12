@@ -1,5 +1,6 @@
 import '../core/api_client.dart';
 import '../core/api_config.dart';
+import '../models/ledger_transaction.dart';
 import '../models/transaction_item.dart';
 import 'transaction_repository.dart';
 
@@ -46,14 +47,19 @@ class HttpTransactionRepository implements TransactionRepository {
 
   @override
   Future<Map<String, dynamic>> getTransactionsCursor({
-    int limit = 20,
+    int limit = 50,
     String? cursor,
+    int? month,
+    int? year,
     String? memberId,
     String? type,
     String? categoryId,
+    String? eventId,
   }) async {
     final queryParams = <String, dynamic>{'limit': limit};
     if (cursor != null && cursor.isNotEmpty) queryParams['cursor'] = cursor;
+    if (month != null) queryParams['month'] = month;
+    if (year != null) queryParams['year'] = year;
     if (memberId != null && memberId.isNotEmpty) {
       queryParams['member_id'] = memberId;
     }
@@ -62,6 +68,9 @@ class HttpTransactionRepository implements TransactionRepository {
     }
     if (categoryId != null && categoryId.isNotEmpty) {
       queryParams['category_id'] = categoryId;
+    }
+    if (eventId != null && eventId.isNotEmpty) {
+      queryParams['event_id'] = eventId;
     }
 
     final response = await apiClient.get(
@@ -74,6 +83,38 @@ class HttpTransactionRepository implements TransactionRepository {
       return response;
     }
     return {'items': [], 'next_cursor': null};
+  }
+
+  @override
+  Future<List<LedgerTransaction>> getLedgerTransactions({
+    int limit = 50,
+    String? cursor,
+    int? month,
+    int? year,
+    String? memberId,
+    String? type,
+    String? categoryId,
+    String? eventId,
+  }) async {
+    final data = await getTransactionsCursor(
+      limit: limit,
+      cursor: cursor,
+      month: month,
+      year: year,
+      memberId: memberId,
+      type: type,
+      categoryId: categoryId,
+      eventId: eventId,
+    );
+
+    if (data['items'] is List) {
+      final items = data['items'] as List;
+      return items
+          .whereType<Map<String, dynamic>>()
+          .map((e) => LedgerTransaction.fromApiResponse(e))
+          .toList();
+    }
+    return [];
   }
 
   @override
@@ -117,7 +158,8 @@ class HttpTransactionRepository implements TransactionRepository {
     if (response is Map<String, dynamic>) {
       return response;
     }
-    throw ApiException(statusCode: 500, message: 'Failed to create transaction');
+    throw ApiException(
+        statusCode: 500, message: 'Failed to create transaction');
   }
 
   @override
@@ -128,4 +170,3 @@ class HttpTransactionRepository implements TransactionRepository {
     );
   }
 }
-

@@ -1,7 +1,7 @@
-Step 1 — Auth & Session: Real Login/Register call karenge, server se mila JWT token secure locker me save karenge aur active user fetch karenge.
-Step 2 — Home Dashboard & Family Orbit: Live GET /api/v1/insights/summary aur GET /api/v1/family/members se liquidity card aur members populate karenge.
-Step 3 — Add Expense Logger & Categories: Logger sheet me real categories load karenge aur expense/income post karenge.
-Step 4 — Activity Ledger: Real transaction history load aur delete karenge.
+Step 1 — Auth & Session: [DONE] Real Login/Register call karenge, server se mila JWT token secure locker me save karenge aur active user fetch karenge.
+Step 2 — Home Dashboard & Family Orbit: [DONE] Live GET /api/v1/insights/summary aur GET /api/v1/family/members se liquidity card aur members populate karenge.
+Step 3 — Add Expense Logger & Categories: [DONE] Logger sheet me real categories load karenge aur expense/income post karenge.
+Step 4 — Activity Ledger: [DONE] Real transaction history load aur delete karenge with cursor pagination, dynamic month & member filters, search & zero mock fallback.
 Step 5 — Targets & Events: Real budget limits aur Durga Puja sinking fund connect karenge.
 Step 6 — Protection Vault & Deep Dive: Insurance policies aur category breakdown chart bind karenge.
 

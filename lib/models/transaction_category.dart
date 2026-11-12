@@ -26,8 +26,8 @@ class TransactionCategory {
     final iconKey = json['icon_key']?.toString() ?? 'tag';
     final colorHex = json['color_hex']?.toString() ?? '#C3F400';
 
-    final icon = _getIconFromKey(iconKey);
-    final iconColor = _getColorFromHex(colorHex);
+    final icon = getIconFromKey(iconKey);
+    final iconColor = getColorFromHex(colorHex);
 
     return TransactionCategory(
       id: id,
@@ -40,7 +40,7 @@ class TransactionCategory {
     );
   }
 
-  static IconData _getIconFromKey(String? iconKey) {
+  static IconData getIconFromKey(String? iconKey) {
     switch (iconKey?.toLowerCase()) {
       case 'shopping-cart':
       case 'shopping_cart':
@@ -90,7 +90,7 @@ class TransactionCategory {
     }
   }
 
-  static Color _getColorFromHex(String? hex,
+  static Color getColorFromHex(String? hex,
       {Color defaultColor = const Color(0xFFC3F400)}) {
     if (hex == null || hex.isEmpty) return defaultColor;
     final cleanHex = hex.replaceFirst('#', '');

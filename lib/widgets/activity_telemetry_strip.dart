@@ -15,8 +15,14 @@ class ActivityTelemetryStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final total = summary.outflowAmount + summary.inflowAmount;
-    final outflowRatio = total > 0 ? (summary.outflowAmount / total) : 0.24;
-    final inflowRatio = total > 0 ? (summary.inflowAmount / total) : 0.76;
+    final outflowRatio = total > 0 ? (summary.outflowAmount / total) : 0.0;
+    final inflowRatio = total > 0 ? (summary.inflowAmount / total) : 0.0;
+
+    final netPrefix = summary.netAmount > 0
+        ? '+'
+        : summary.netAmount < 0
+            ? '-'
+            : '';
 
     return Container(
       width: double.infinity,
@@ -56,9 +62,11 @@ class ActivityTelemetryStrip extends StatelessWidget {
                 ],
               ),
               Text(
-                'NET: +${CurrencyFormatter.formatInr(summary.netAmount)}',
+                'NET: $netPrefix${CurrencyFormatter.formatInr(summary.netAmount.abs())}',
                 style: AppTypography.labelMd(
-                  color: AppColors.textPrimary,
+                  color: summary.netAmount >= 0
+                      ? AppColors.primaryFixed
+                      : AppColors.dangerCoral,
                   fontWeight: FontWeight.w700,
                 ).copyWith(
                   fontSize: 12,
@@ -127,28 +135,29 @@ class ActivityTelemetryStrip extends StatelessWidget {
               color: AppColors.surface02,
               borderRadius: BorderRadius.circular(9999),
             ),
-            child: Row(
-              children: [
-                Expanded(
-                  flex: (outflowRatio * 100).round(),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.dangerCoral,
-                      borderRadius: BorderRadius.circular(9999),
+            child: total > 0
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(9999),
+                    child: Row(
+                      children: [
+                        if (summary.outflowAmount > 0)
+                          Expanded(
+                            flex: (outflowRatio * 1000).round().clamp(1, 1000),
+                            child: Container(
+                              color: AppColors.dangerCoral,
+                            ),
+                          ),
+                        if (summary.inflowAmount > 0)
+                          Expanded(
+                            flex: (inflowRatio * 1000).round().clamp(1, 1000),
+                            child: Container(
+                              color: AppColors.primaryFixed,
+                            ),
+                          ),
+                      ],
                     ),
-                  ),
-                ),
-                Expanded(
-                  flex: (inflowRatio * 100).round(),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryFixed,
-                      borderRadius: BorderRadius.circular(9999),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+                  )
+                : const SizedBox.shrink(),
           ),
         ],
       ),
