@@ -1,23 +1,19 @@
 import 'package:flutter/material.dart';
+import '../models/family_member.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 
 class BeneficiaryChipSelector extends StatelessWidget {
-  final String selectedBeneficiary;
-  final ValueChanged<String> onSelected;
+  final List<FamilyMember> members;
+  final String? selectedBeneficiaryMemberId; // null represents 'Entire Family'
+  final ValueChanged<String?> onSelected;
 
   const BeneficiaryChipSelector({
     super.key,
-    required this.selectedBeneficiary,
+    this.members = const [],
+    required this.selectedBeneficiaryMemberId,
     required this.onSelected,
   });
-
-  static const List<String> beneficiaries = [
-    'Entire Family',
-    'Arpa',
-    'Chandrani',
-    'Aryahi',
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -52,67 +48,89 @@ class BeneficiaryChipSelector extends StatelessWidget {
           scrollDirection: Axis.horizontal,
           physics: const BouncingScrollPhysics(),
           child: Row(
-            children: beneficiaries.map((b) {
-              final isSelected = selectedBeneficiary == b;
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: InkWell(
-                  onTap: () => onSelected(b),
-                  borderRadius: BorderRadius.circular(9999),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: isSelected ? AppColors.surface02 : AppColors.surface01,
-                      borderRadius: BorderRadius.circular(9999),
-                      border: Border.all(
-                        color: isSelected ? AppColors.tertiaryFixed : AppColors.ghostBorder,
-                        width: 1,
-                      ),
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color: AppColors.tertiaryFixed.withValues(alpha: 0.18),
-                                blurRadius: 12,
-                              ),
-                            ]
-                          : null,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (b == 'Entire Family')
-                          Icon(
-                            Icons.group_rounded,
-                            size: 16,
-                            color: isSelected ? AppColors.tertiaryFixed : AppColors.textMuted,
-                          )
-                        else
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: isSelected ? AppColors.tertiaryFixed : AppColors.surface03,
-                            ),
-                          ),
-                        const SizedBox(width: 6),
-                        Text(
-                          b,
-                          style: AppTypography.labelMd(
-                            color: isSelected ? AppColors.tertiaryFixed : AppColors.textMuted,
-                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+            children: [
+              // 1. Entire Family Chip (null member ID)
+              _buildChip(
+                label: 'Entire Family',
+                isEntireFamily: true,
+                isSelected: selectedBeneficiaryMemberId == null,
+                onTap: () => onSelected(null),
+              ),
+
+              // 2. Dynamic Family Members
+              for (final member in members) ...[
+                const SizedBox(width: 8),
+                _buildChip(
+                  label: member.name,
+                  isEntireFamily: false,
+                  isSelected: selectedBeneficiaryMemberId == member.id,
+                  onTap: () => onSelected(member.id),
                 ),
-              );
-            }).toList(),
+              ],
+            ],
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildChip({
+    required String label,
+    required bool isEntireFamily,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(9999),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.surface02 : AppColors.surface01,
+          borderRadius: BorderRadius.circular(9999),
+          border: Border.all(
+            color: isSelected ? AppColors.tertiaryFixed : AppColors.ghostBorder,
+            width: 1,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.tertiaryFixed.withValues(alpha: 0.18),
+                    blurRadius: 12,
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isEntireFamily)
+              Icon(
+                Icons.group_rounded,
+                size: 16,
+                color: isSelected ? AppColors.tertiaryFixed : AppColors.textMuted,
+              )
+            else
+              Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isSelected ? AppColors.tertiaryFixed : AppColors.surface03,
+                ),
+              ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: AppTypography.labelMd(
+                color: isSelected ? AppColors.tertiaryFixed : AppColors.textMuted,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

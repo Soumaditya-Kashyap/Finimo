@@ -15,6 +15,40 @@ class PaidByPayerSelector extends StatelessWidget {
     required this.onSelected,
   });
 
+  String _formatRole(FamilyMember member) {
+    if (member.role != null && member.role!.trim().isNotEmpty) {
+      final r = member.role!.trim();
+      return r[0].toUpperCase() + r.substring(1).toLowerCase();
+    }
+    switch (member.relationType) {
+      case MemberRelation.admin:
+        return 'Primary';
+      case MemberRelation.spouse:
+        return 'Spouse';
+      case MemberRelation.child:
+        return 'Child';
+      case MemberRelation.parent:
+        return 'Parent';
+      case MemberRelation.sibling:
+        return 'Sibling';
+      case MemberRelation.self:
+        return 'Self';
+      case MemberRelation.other:
+        return 'Member';
+    }
+  }
+
+  Color _getAvatarBg(int index) {
+    const palette = [
+      AppColors.secondaryContainer,
+      AppColors.surface03,
+      Color(0xFF1E293B),
+      Color(0xFF282828),
+      Color(0xFF1A3322),
+    ];
+    return palette[index % palette.length];
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -43,32 +77,56 @@ class PaidByPayerSelector extends StatelessWidget {
 
         const SizedBox(height: 10),
 
-        // 2 Columns of Payer Cards (Arpa, Chandrani)
-        Row(
-          children: [
-            Expanded(
-              child: _buildPayerCard(
-                memberId: 'm1_arpa',
-                name: 'Arpa',
-                role: 'Primary',
-                initial: 'A',
-                isSelected: selectedMemberId == 'm1_arpa',
-                avatarBg: AppColors.secondaryContainer,
-              ),
+        if (members.isEmpty)
+          _buildPayerCard(
+            memberId: 'self',
+            name: 'Self',
+            role: 'Primary',
+            initial: 'U',
+            isSelected: true,
+            avatarBg: AppColors.secondaryContainer,
+          )
+        else if (members.length <= 2)
+          Row(
+            children: [
+              for (int i = 0; i < members.length; i++) ...[
+                if (i > 0) const SizedBox(width: 10),
+                Expanded(
+                  child: _buildPayerCard(
+                    memberId: members[i].id,
+                    name: members[i].name,
+                    role: _formatRole(members[i]),
+                    initial: members[i].initial,
+                    isSelected: selectedMemberId == members[i].id,
+                    avatarBg: _getAvatarBg(i),
+                  ),
+                ),
+              ],
+            ],
+          )
+        else
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            child: Row(
+              children: [
+                for (int i = 0; i < members.length; i++) ...[
+                  if (i > 0) const SizedBox(width: 10),
+                  SizedBox(
+                    width: 160,
+                    child: _buildPayerCard(
+                      memberId: members[i].id,
+                      name: members[i].name,
+                      role: _formatRole(members[i]),
+                      initial: members[i].initial,
+                      isSelected: selectedMemberId == members[i].id,
+                      avatarBg: _getAvatarBg(i),
+                    ),
+                  ),
+                ],
+              ],
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _buildPayerCard(
-                memberId: 'm2_chandrani',
-                name: 'Chandrani',
-                role: 'Spouse',
-                initial: 'C',
-                isSelected: selectedMemberId == 'm2_chandrani',
-                avatarBg: AppColors.surface03,
-              ),
-            ),
-          ],
-        ),
+          ),
       ],
     );
   }

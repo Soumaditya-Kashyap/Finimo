@@ -172,32 +172,41 @@ class _HomeScreenState extends State<HomeScreen> {
                   // 3. Quick Action Grid (Expense, Income, Event Bill, Policy)
                   QuickActionGrid(
                     onExpenseTap: () async {
-                      await AddExpenseIncomeScreen.show(
+                      final result = await AddExpenseIncomeScreen.show(
                         context,
                         repository: widget.repository,
+                        familyRepository: _familyRepo,
+                        transactionRepository: _transactionRepo,
+                        dashboardRepository: _dashboardRepo,
                         initialType: TransactionType.expense,
                       );
-                      if (mounted) {
+                      if (result == true && mounted) {
                         _loadData(selectedMemberId: _selectedMemberId);
                       }
                     },
                     onIncomeTap: () async {
-                      await AddExpenseIncomeScreen.show(
+                      final result = await AddExpenseIncomeScreen.show(
                         context,
                         repository: widget.repository,
+                        familyRepository: _familyRepo,
+                        transactionRepository: _transactionRepo,
+                        dashboardRepository: _dashboardRepo,
                         initialType: TransactionType.income,
                       );
-                      if (mounted) {
+                      if (result == true && mounted) {
                         _loadData(selectedMemberId: _selectedMemberId);
                       }
                     },
                     onEventBillTap: () async {
-                      await AddExpenseIncomeScreen.show(
+                      final result = await AddExpenseIncomeScreen.show(
                         context,
                         repository: widget.repository,
+                        familyRepository: _familyRepo,
+                        transactionRepository: _transactionRepo,
+                        dashboardRepository: _dashboardRepo,
                         initialType: TransactionType.expense,
                       );
-                      if (mounted) {
+                      if (result == true && mounted) {
                         _loadData(selectedMemberId: _selectedMemberId);
                       }
                     },

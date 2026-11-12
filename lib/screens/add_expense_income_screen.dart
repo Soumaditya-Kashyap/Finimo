@@ -3,7 +3,11 @@ import '../models/conjoined_event_summary.dart';
 import '../models/family_member.dart';
 import '../models/transaction_category.dart';
 import '../models/transaction_item.dart';
+import '../services/category_repository.dart';
+import '../services/dashboard_repository.dart';
+import '../services/family_repository.dart';
 import '../services/home_repository.dart';
+import '../services/transaction_repository.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../widgets/amount_keypad_display.dart';
@@ -16,26 +20,42 @@ import '../widgets/transaction_type_switch.dart';
 
 class AddExpenseIncomeScreen extends StatefulWidget {
   final HomeRepository repository;
+  final FamilyRepository? familyRepository;
+  final CategoryRepository? categoryRepository;
+  final TransactionRepository? transactionRepository;
+  final DashboardRepository? dashboardRepository;
   final TransactionType initialType;
 
   const AddExpenseIncomeScreen({
     super.key,
     required this.repository,
+    this.familyRepository,
+    this.categoryRepository,
+    this.transactionRepository,
+    this.dashboardRepository,
     this.initialType = TransactionType.expense,
   });
 
   /// Opens the screen as a full-height modal bottom sheet extending till top of screen
-  static Future<void> show(
+  static Future<bool?> show(
     BuildContext context, {
     required HomeRepository repository,
+    FamilyRepository? familyRepository,
+    CategoryRepository? categoryRepository,
+    TransactionRepository? transactionRepository,
+    DashboardRepository? dashboardRepository,
     TransactionType initialType = TransactionType.expense,
   }) {
-    return showModalBottomSheet(
+    return showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => AddExpenseIncomeScreen(
         repository: repository,
+        familyRepository: familyRepository,
+        categoryRepository: categoryRepository,
+        transactionRepository: transactionRepository,
+        dashboardRepository: dashboardRepository,
         initialType: initialType,
       ),
     );
@@ -46,13 +66,25 @@ class AddExpenseIncomeScreen extends StatefulWidget {
 }
 
 class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
+  late final FamilyRepository _familyRepo;
+  late final CategoryRepository _categoryRepo;
+  late final TransactionRepository _transactionRepo;
+  late final DashboardRepository _dashboardRepo;
+
   late TransactionType _selectedType;
   String _rawAmount = '0.00';
-  String _selectedPayerId = 'm1_arpa';
-  String _selectedBeneficiary = 'Entire Family';
-  String _selectedCategoryId = 'groceries';
-  bool _isTaggedToEvent = true;
+  String? _selectedPayerId;
+  String? _selectedBeneficiaryMemberId; // null means 'Entire Family'
+  String _selectedCategoryId = '';
+  bool _isTaggedToEvent = false;
   bool _isSubmitting = false;
+
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _notesController = TextEditingController();
+
+  List<FamilyMember> _members = [];
+  ConjoinedEventSummary? _activeEvent;
+  List<TransactionCategory> _allCategories = [];
 
   late Future<_AddScreenDependencies> _depsFuture;
 
@@ -63,26 +95,87 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
   void initState() {
     super.initState();
     _selectedType = widget.initialType;
+    _familyRepo = widget.familyRepository ?? HttpFamilyRepository();
+    _categoryRepo = widget.categoryRepository ?? HttpCategoryRepository();
+    _transactionRepo =
+        widget.transactionRepository ?? HttpTransactionRepository();
+    _dashboardRepo =
+        widget.dashboardRepository ?? HttpDashboardRepository();
+
     _scrollController.addListener(_onScroll);
-    _depsFuture = Future.wait([
-      widget.repository.getFamilyMembers(),
-      widget.repository.getActiveConjoinedEvent(),
-    ]).then((res) => _AddScreenDependencies(
-          members: res[0] as List<FamilyMember>,
-          activeEvent: res[1] as ConjoinedEventSummary,
-        ));
+    _depsFuture = _loadInitialDependencies();
+  }
+
+  Future<_AddScreenDependencies> _loadInitialDependencies() async {
+    final results = await Future.wait([
+      _familyRepo
+          .getFamilyMembers()
+          .catchError((_) => widget.repository.getFamilyMembers()),
+      _dashboardRepo
+          .getActiveConjoinedEvent()
+          .catchError((_) => null),
+      _categoryRepo
+          .getCategories()
+          .catchError((_) => TransactionCategory.defaultCategories),
+    ]);
+
+    final members = (results[0] as List<FamilyMember>?) ?? [];
+    final activeEvent = results[1] as ConjoinedEventSummary?;
+    final categories =
+        (results[2] as List<TransactionCategory>?) ?? TransactionCategory.defaultCategories;
+
+    _members = members;
+    _activeEvent = activeEvent;
+    _allCategories = categories;
+
+    if (_selectedPayerId == null && members.isNotEmpty) {
+      _selectedPayerId = members.first.id;
+    }
+
+    _syncSelectedCategoryForCurrentType();
+
+    return _AddScreenDependencies(
+      members: members,
+      activeEvent: activeEvent,
+      categories: categories,
+    );
+  }
+
+  void _syncSelectedCategoryForCurrentType() {
+    final targetTypeStr =
+        _selectedType == TransactionType.expense ? 'EXPENSE' : 'INCOME';
+    final matching = _allCategories
+        .where((c) => c.type.toUpperCase() == targetTypeStr)
+        .toList();
+
+    if (matching.isEmpty) {
+      final fallback = TransactionCategory.defaultCategories
+          .where((c) => c.type.toUpperCase() == targetTypeStr)
+          .toList();
+      if (fallback.isNotEmpty) {
+        _selectedCategoryId = fallback.first.id;
+      }
+      return;
+    }
+
+    final exists = matching.any((c) => c.id == _selectedCategoryId);
+    if (!exists) {
+      _selectedCategoryId = matching.first.id;
+    }
   }
 
   @override
   void dispose() {
+    _titleController.dispose();
+    _notesController.dispose();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
   }
 
   void _onScroll() {
-    // Show sticky pill only when the large amount card is fully scrolled under header (> 170px)
-    final shouldShow = _scrollController.hasClients && _scrollController.offset > 170;
+    final shouldShow =
+        _scrollController.hasClients && _scrollController.offset > 170;
     if (shouldShow != _showStickyAmount) {
       setState(() => _showStickyAmount = shouldShow);
     }
@@ -132,18 +225,142 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
   }
 
   Future<void> _recordTransaction() async {
+    final amount = double.tryParse(_rawAmount) ?? 0.0;
+    if (amount <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please enter an amount greater than ₹0'),
+          backgroundColor: AppColors.dangerCoral,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+      return;
+    }
+
+    if (_selectedCategoryId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please select a category'),
+          backgroundColor: AppColors.dangerCoral,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+      return;
+    }
+
+    String payerId = _selectedPayerId ?? '';
+    if (payerId.isEmpty && _members.isNotEmpty) {
+      payerId = _members.first.id;
+    }
+    if (payerId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('No payer member selected'),
+          backgroundColor: AppColors.dangerCoral,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+      return;
+    }
+
+    // Resolve transaction title
+    String title = _titleController.text.trim();
+    if (title.isEmpty) {
+      final selectedCat = _allCategories.firstWhere(
+        (c) => c.id == _selectedCategoryId,
+        orElse: () => TransactionCategory(
+          id: _selectedCategoryId,
+          name: _selectedType == TransactionType.expense ? 'Expense' : 'Income',
+          icon: Icons.receipt_long_outlined,
+          iconColor: AppColors.primaryFixed,
+        ),
+      );
+      title = selectedCat.name;
+    }
+
     setState(() => _isSubmitting = true);
-    // Simulate ledger write & API sync
-    await Future.delayed(const Duration(milliseconds: 600));
-    if (!mounted) return;
-    Navigator.of(context).pop();
+
+    try {
+      final typeStr =
+          _selectedType == TransactionType.expense ? 'EXPENSE' : 'INCOME';
+      final uuidRegex = RegExp(
+          r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
+
+      final beneficiaryId =
+          (uuidRegex.hasMatch(_selectedBeneficiaryMemberId ?? ''))
+              ? _selectedBeneficiaryMemberId
+              : null;
+
+      final eventId = (_isTaggedToEvent &&
+              _activeEvent != null &&
+              uuidRegex.hasMatch(_activeEvent!.id))
+          ? _activeEvent!.id
+          : null;
+
+      await _transactionRepo.createTransaction(
+        type: typeStr,
+        amount: amount,
+        title: title,
+        categoryId: _selectedCategoryId,
+        paidByMemberId: payerId,
+        beneficiaryMemberId: beneficiaryId,
+        eventId: eventId,
+        transactionDate: DateTime.now(),
+        paymentMode: 'UPI',
+        notes: _notesController.text.trim().isNotEmpty
+            ? _notesController.text.trim()
+            : null,
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle_rounded,
+                  color: AppColors.canvasBase, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '$title (₹${amount.toStringAsFixed(2)}) recorded successfully!',
+                  style: const TextStyle(
+                      color: AppColors.canvasBase, fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: AppColors.primaryFixed,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to record transaction: $e'),
+          backgroundColor: AppColors.dangerCoral,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
     final topPadding = mediaQuery.padding.top;
-    // Keep a generous safe gap from status bar so it never overlaps battery/time/status bar icons!
     final topOffset = topPadding + 36.0;
 
     return Padding(
@@ -192,7 +409,8 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.primaryFixed.withValues(alpha: 0.8),
+                                  color: AppColors.primaryFixed
+                                      .withValues(alpha: 0.8),
                                   blurRadius: 8,
                                   spreadRadius: 1,
                                 ),
@@ -201,7 +419,9 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            'Add Transaction',
+                            _selectedType == TransactionType.expense
+                                ? 'Add Expense'
+                                : 'Add Income',
                             style: AppTypography.headlineSm(
                               color: AppColors.textPrimary,
                               fontWeight: FontWeight.w700,
@@ -235,11 +455,25 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(
-                      child: CircularProgressIndicator(color: AppColors.primaryFixed),
+                      child: CircularProgressIndicator(
+                          color: AppColors.primaryFixed),
                     );
                   }
 
-                  final deps = snapshot.data!;
+                  final deps = snapshot.data ??
+                      _AddScreenDependencies(
+                        members: _members,
+                        activeEvent: _activeEvent,
+                        categories: _allCategories,
+                      );
+
+                  final targetTypeStr =
+                      _selectedType == TransactionType.expense
+                          ? 'EXPENSE'
+                          : 'INCOME';
+                  final currentCategories = deps.categories
+                      .where((c) => c.type.toUpperCase() == targetTypeStr)
+                      .toList();
 
                   return Stack(
                     children: [
@@ -248,121 +482,175 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
                         physics: const ClampingScrollPhysics(),
                         padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
                         child: Column(
-                    children: [
-                      // 1. Segmented Expense / Income Switch
-                      TransactionTypeSegmentedSwitch(
-                        selectedType: _selectedType,
-                        onTypeChanged: (type) => setState(() => _selectedType = type),
-                      ),
+                          children: [
+                            // 1. Segmented Expense / Income Switch
+                            TransactionTypeSegmentedSwitch(
+                              selectedType: _selectedType,
+                              onTypeChanged: (type) {
+                                setState(() {
+                                  _selectedType = type;
+                                  _syncSelectedCategoryForCurrentType();
+                                });
+                              },
+                            ),
 
-                      const SizedBox(height: 14),
+                            const SizedBox(height: 14),
 
-                      // 2. Transaction Value Display & Quick Presets
-                      AmountKeypadDisplay(
-                        rawAmount: _rawAmount,
-                        onPresetAdd: _handlePresetAdd,
-                        onClear: _handleClear,
-                      ),
+                            // 2. Transaction Value Display & Quick Presets
+                            AmountKeypadDisplay(
+                              rawAmount: _rawAmount,
+                              onPresetAdd: _handlePresetAdd,
+                              onClear: _handleClear,
+                            ),
 
-                      const SizedBox(height: 16),
+                            const SizedBox(height: 14),
 
-                      // 3. Paid By Payer Row (Arpa vs Chandrani)
-                      PaidByPayerSelector(
-                        members: deps.members,
-                        selectedMemberId: _selectedPayerId,
-                        onSelected: (id) => setState(() => _selectedPayerId = id),
-                      ),
+                            // Optional Title / Merchant note input
+                            Container(
+                              decoration: BoxDecoration(
+                                color: AppColors.surface01,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                    color: AppColors.ghostBorder, width: 1),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 2),
+                              child: TextField(
+                                controller: _titleController,
+                                style: AppTypography.labelMd(
+                                    color: AppColors.textPrimary),
+                                decoration: InputDecoration(
+                                  border: InputBorder.none,
+                                  isDense: true,
+                                  contentPadding:
+                                      const EdgeInsets.symmetric(vertical: 10),
+                                  hintText:
+                                      'Optional title / note (e.g. Swiggy, Fuel)',
+                                  hintStyle: AppTypography.bodySm(
+                                      color: AppColors.textMuted),
+                                  icon: const Icon(
+                                    Icons.edit_note_rounded,
+                                    color: AppColors.textMuted,
+                                    size: 20,
+                                  ),
+                                ),
+                              ),
+                            ),
 
-                      const SizedBox(height: 16),
+                            const SizedBox(height: 16),
 
-                      // 4. Beneficiary / Spent For Chips
-                      BeneficiaryChipSelector(
-                        selectedBeneficiary: _selectedBeneficiary,
-                        onSelected: (b) => setState(() => _selectedBeneficiary = b),
-                      ),
+                            // 3. Paid By Payer Row (Dynamic members)
+                            PaidByPayerSelector(
+                              members: deps.members,
+                              selectedMemberId: _selectedPayerId ??
+                                  (deps.members.isNotEmpty
+                                      ? deps.members.first.id
+                                      : ''),
+                              onSelected: (id) =>
+                                  setState(() => _selectedPayerId = id),
+                            ),
 
-                      const SizedBox(height: 16),
+                            const SizedBox(height: 16),
 
-                      // 5. Category 3x2 Grid
-                      CategorySelectorGrid(
-                        categories: TransactionCategory.defaultCategories,
-                        selectedCategoryId: _selectedCategoryId,
-                        onSelected: (catId) => setState(() => _selectedCategoryId = catId),
-                      ),
+                            // 4. Beneficiary / Spent For Chips (Dynamic members)
+                            BeneficiaryChipSelector(
+                              members: deps.members,
+                              selectedBeneficiaryMemberId:
+                                  _selectedBeneficiaryMemberId,
+                              onSelected: (id) => setState(
+                                  () => _selectedBeneficiaryMemberId = id),
+                            ),
 
-                      const SizedBox(height: 16),
+                            const SizedBox(height: 16),
 
-                      // 6. Conjoined Event Tag Card (Shared Pot)
-                      ConjoinedEventTagCard(
-                        event: deps.activeEvent,
-                        isTagged: _isTaggedToEvent,
-                        onToggle: (val) => setState(() => _isTaggedToEvent = val),
-                      ),
+                            // 5. Category Selector Grid (Dynamic categories from API)
+                            CategorySelectorGrid(
+                              categories: currentCategories,
+                              selectedCategoryId: _selectedCategoryId,
+                              onSelected: (catId) =>
+                                  setState(() => _selectedCategoryId = catId),
+                            ),
 
-                      const SizedBox(height: 16),
-
-                      // 7. Numeric Keypad
-                      NumericKeypadGrid(
-                        onKeyPress: _handleKeyPress,
-                        onBackspace: _handleBackspace,
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      // 8. Record Transaction Primary Action Button
-                      InkWell(
-                        onTap: _isSubmitting ? null : _recordTransaction,
-                        borderRadius: BorderRadius.circular(16),
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          decoration: BoxDecoration(
-                            color: AppColors.primaryFixed,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.primaryFixed.withValues(alpha: 0.28),
-                                blurRadius: 28,
-                                offset: const Offset(0, 8),
+                            // 6. Conjoined Event Tag Card (Shared Pot) - shown if active event exists
+                            if (deps.activeEvent != null) ...[
+                              const SizedBox(height: 16),
+                              ConjoinedEventTagCard(
+                                event: deps.activeEvent!,
+                                isTagged: _isTaggedToEvent,
+                                onToggle: (val) =>
+                                    setState(() => _isTaggedToEvent = val),
                               ),
                             ],
-                          ),
-                          child: Center(
-                            child: _isSubmitting
-                                ? const SizedBox(
-                                    width: 22,
-                                    height: 22,
-                                    child: CircularProgressIndicator(
-                                      color: AppColors.canvasBase,
-                                      strokeWidth: 2.5,
+
+                            const SizedBox(height: 16),
+
+                            // 7. Numeric Keypad
+                            NumericKeypadGrid(
+                              onKeyPress: _handleKeyPress,
+                              onBackspace: _handleBackspace,
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            // 8. Record Transaction Primary Action Button
+                            InkWell(
+                              onTap: _isSubmitting ? null : _recordTransaction,
+                              borderRadius: BorderRadius.circular(16),
+                              child: Container(
+                                width: double.infinity,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryFixed,
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.primaryFixed
+                                          .withValues(alpha: 0.28),
+                                      blurRadius: 28,
+                                      offset: const Offset(0, 8),
                                     ),
-                                  )
-                                : Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        'Record Transaction',
-                                        style: AppTypography.headlineSm(
-                                          color: AppColors.canvasBase,
-                                          fontWeight: FontWeight.w700,
+                                  ],
+                                ),
+                                child: Center(
+                                  child: _isSubmitting
+                                      ? const SizedBox(
+                                          width: 22,
+                                          height: 22,
+                                          child: CircularProgressIndicator(
+                                            color: AppColors.canvasBase,
+                                            strokeWidth: 2.5,
+                                          ),
+                                        )
+                                      : Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              _selectedType ==
+                                                      TransactionType.expense
+                                                  ? 'Record Expense'
+                                                  : 'Record Income',
+                                              style: AppTypography.headlineSm(
+                                                color: AppColors.canvasBase,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            const Icon(
+                                              Icons.arrow_forward_rounded,
+                                              color: AppColors.canvasBase,
+                                              size: 20,
+                                            ),
+                                          ],
                                         ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      const Icon(
-                                        Icons.arrow_forward_rounded,
-                                        color: AppColors.canvasBase,
-                                        size: 20,
-                                      ),
-                                    ],
-                                  ),
-                          ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                // Floating Sticky Amount Banner (floats on top without altering layout height)
-                Positioned(
+                      // Floating Sticky Amount Banner
+                      Positioned(
                         top: 0,
                         left: 16,
                         right: 16,
@@ -371,15 +659,18 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
                           crossFadeState: _showStickyAmount
                               ? CrossFadeState.showSecond
                               : CrossFadeState.showFirst,
-                          firstChild: const SizedBox(width: double.infinity, height: 0),
+                          firstChild: const SizedBox(
+                              width: double.infinity, height: 0),
                           secondChild: Container(
                             width: double.infinity,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
                             decoration: BoxDecoration(
                               color: AppColors.surface01,
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(
-                                color: AppColors.primaryFixed.withValues(alpha: 0.35),
+                                color: AppColors.primaryFixed
+                                    .withValues(alpha: 0.35),
                                 width: 1,
                               ),
                               boxShadow: [
@@ -396,17 +687,25 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
                                 Row(
                                   children: [
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
-                                        color: _selectedType == TransactionType.expense
-                                            ? AppColors.primaryFixed.withValues(alpha: 0.15)
-                                            : AppColors.tertiaryFixed.withValues(alpha: 0.15),
+                                        color: _selectedType ==
+                                                TransactionType.expense
+                                            ? AppColors.primaryFixed
+                                                .withValues(alpha: 0.15)
+                                            : AppColors.tertiaryFixed
+                                                .withValues(alpha: 0.15),
                                         borderRadius: BorderRadius.circular(6),
                                       ),
                                       child: Text(
-                                        _selectedType == TransactionType.expense ? 'EXPENSE' : 'INCOME',
+                                        _selectedType ==
+                                                TransactionType.expense
+                                            ? 'EXPENSE'
+                                            : 'INCOME',
                                         style: AppTypography.labelSm(
-                                          color: _selectedType == TransactionType.expense
+                                          color: _selectedType ==
+                                                  TransactionType.expense
                                               ? AppColors.primaryFixed
                                               : AppColors.tertiaryFixed,
                                           fontWeight: FontWeight.w800,
@@ -427,7 +726,8 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
                                   onTap: () {
                                     _scrollController.animateTo(
                                       0,
-                                      duration: const Duration(milliseconds: 300),
+                                      duration:
+                                          const Duration(milliseconds: 300),
                                       curve: Curves.easeOutCubic,
                                     );
                                   },
@@ -458,10 +758,12 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
 
 class _AddScreenDependencies {
   final List<FamilyMember> members;
-  final ConjoinedEventSummary activeEvent;
+  final ConjoinedEventSummary? activeEvent;
+  final List<TransactionCategory> categories;
 
   _AddScreenDependencies({
     required this.members,
     required this.activeEvent,
+    required this.categories,
   });
 }
