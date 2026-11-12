@@ -7,12 +7,18 @@ class BeneficiaryChipSelector extends StatelessWidget {
   final List<FamilyMember> members;
   final String? selectedBeneficiaryMemberId; // null represents 'Entire Family'
   final ValueChanged<String?> onSelected;
+  final String title;
+  final String subtitle;
+  final Color activeColor;
 
   const BeneficiaryChipSelector({
     super.key,
     this.members = const [],
     required this.selectedBeneficiaryMemberId,
     required this.onSelected,
+    this.title = 'Spent For (Whom?)',
+    this.subtitle = 'Full Share',
+    this.activeColor = AppColors.tertiaryFixed,
   });
 
   @override
@@ -25,16 +31,16 @@ class BeneficiaryChipSelector extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Spent For (Whom?)',
+              title,
               style: AppTypography.labelMd(
                 color: AppColors.textMuted,
                 fontWeight: FontWeight.w500,
               ),
             ),
             Text(
-              'Full Share',
+              subtitle,
               style: AppTypography.labelSm(
-                color: AppColors.tertiaryFixed,
+                color: activeColor,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -90,13 +96,13 @@ class BeneficiaryChipSelector extends StatelessWidget {
           color: isSelected ? AppColors.surface02 : AppColors.surface01,
           borderRadius: BorderRadius.circular(9999),
           border: Border.all(
-            color: isSelected ? AppColors.tertiaryFixed : AppColors.ghostBorder,
+            color: isSelected ? activeColor : AppColors.ghostBorder,
             width: 1,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: AppColors.tertiaryFixed.withValues(alpha: 0.18),
+                    color: activeColor.withValues(alpha: 0.18),
                     blurRadius: 12,
                   ),
                 ]
@@ -109,7 +115,7 @@ class BeneficiaryChipSelector extends StatelessWidget {
               Icon(
                 Icons.group_rounded,
                 size: 16,
-                color: isSelected ? AppColors.tertiaryFixed : AppColors.textMuted,
+                color: isSelected ? activeColor : AppColors.textMuted,
               )
             else
               Container(
@@ -117,14 +123,14 @@ class BeneficiaryChipSelector extends StatelessWidget {
                 height: 6,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: isSelected ? AppColors.tertiaryFixed : AppColors.surface03,
+                  color: isSelected ? activeColor : AppColors.surface03,
                 ),
               ),
             const SizedBox(width: 6),
             Text(
               label,
               style: AppTypography.labelMd(
-                color: isSelected ? AppColors.tertiaryFixed : AppColors.textMuted,
+                color: isSelected ? activeColor : AppColors.textMuted,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               ),
             ),

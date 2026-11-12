@@ -7,12 +7,14 @@ class CategorySelectorGrid extends StatelessWidget {
   final List<TransactionCategory> categories;
   final String selectedCategoryId;
   final ValueChanged<String> onSelected;
+  final Color activeColor;
 
   const CategorySelectorGrid({
     super.key,
     required this.categories,
     required this.selectedCategoryId,
     required this.onSelected,
+    this.activeColor = AppColors.primaryFixed,
   });
 
   @override
@@ -77,18 +79,20 @@ class CategorySelectorGrid extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
                   decoration: BoxDecoration(
-                    color: isSelected ? AppColors.surface02 : AppColors.surface01,
+                    color:
+                        isSelected ? AppColors.surface02 : AppColors.surface01,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: isSelected ? AppColors.primaryFixed : AppColors.ghostBorder,
+                      color: isSelected ? activeColor : AppColors.ghostBorder,
                       width: 1,
                     ),
                     boxShadow: isSelected
                         ? [
                             BoxShadow(
-                              color: AppColors.primaryFixed.withValues(alpha: 0.12),
+                              color: activeColor.withValues(alpha: 0.12),
                               blurRadius: 12,
                             ),
                           ]
@@ -100,7 +104,7 @@ class CategorySelectorGrid extends StatelessWidget {
                       Icon(
                         cat.icon,
                         size: 15,
-                        color: isSelected ? AppColors.primaryFixed : cat.iconColor,
+                        color: isSelected ? activeColor : cat.iconColor,
                       ),
                       const SizedBox(width: 5),
                       Flexible(
@@ -109,7 +113,9 @@ class CategorySelectorGrid extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: AppTypography.labelSm(
-                            color: isSelected ? AppColors.primaryFixed : AppColors.textPrimary,
+                            color: isSelected
+                                ? activeColor
+                                : AppColors.textPrimary,
                             fontWeight: FontWeight.w600,
                           ).copyWith(
                             fontSize: 11,

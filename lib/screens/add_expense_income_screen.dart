@@ -257,7 +257,7 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
     if (payerId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('No payer member selected'),
+          content: const Text('No member selected'),
           backgroundColor: AppColors.dangerCoral,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -275,7 +275,9 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
           id: _selectedCategoryId,
           name: _selectedType == TransactionType.expense ? 'Expense' : 'Income',
           icon: Icons.receipt_long_outlined,
-          iconColor: AppColors.primaryFixed,
+          iconColor: _selectedType == TransactionType.expense
+              ? AppColors.primaryFixed
+              : AppColors.tertiaryFixed,
         ),
       );
       title = selectedCat.name;
@@ -284,8 +286,8 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
     setState(() => _isSubmitting = true);
 
     try {
-      final typeStr =
-          _selectedType == TransactionType.expense ? 'EXPENSE' : 'INCOME';
+      final isExpense = _selectedType == TransactionType.expense;
+      final typeStr = isExpense ? 'EXPENSE' : 'INCOME';
       final uuidRegex = RegExp(
           r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
 
@@ -294,7 +296,8 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
               ? _selectedBeneficiaryMemberId
               : null;
 
-      final eventId = (_isTaggedToEvent &&
+      final eventId = (isExpense &&
+              _isTaggedToEvent &&
               _activeEvent != null &&
               uuidRegex.hasMatch(_activeEvent!.id))
           ? _activeEvent!.id
@@ -317,6 +320,9 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
 
       if (!mounted) return;
 
+      final accentColor =
+          isExpense ? AppColors.primaryFixed : AppColors.tertiaryFixed;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -334,7 +340,7 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
               ),
             ],
           ),
-          backgroundColor: AppColors.primaryFixed,
+          backgroundColor: accentColor,
           behavior: SnackBarBehavior.floating,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -362,6 +368,10 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
     final mediaQuery = MediaQuery.of(context);
     final topPadding = mediaQuery.padding.top;
     final topOffset = topPadding + 36.0;
+
+    final isExpense = _selectedType == TransactionType.expense;
+    final accentColor =
+        isExpense ? AppColors.primaryFixed : AppColors.tertiaryFixed;
 
     return Padding(
       padding: EdgeInsets.only(top: topOffset),
@@ -405,12 +415,11 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
                             width: 8,
                             height: 8,
                             decoration: BoxDecoration(
-                              color: AppColors.primaryFixed,
+                              color: accentColor,
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.primaryFixed
-                                      .withValues(alpha: 0.8),
+                                  color: accentColor.withValues(alpha: 0.8),
                                   blurRadius: 8,
                                   spreadRadius: 1,
                                 ),
@@ -419,9 +428,7 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            _selectedType == TransactionType.expense
-                                ? 'Add Expense'
-                                : 'Add Income',
+                            isExpense ? 'Add Expense' : 'Add Income',
                             style: AppTypography.headlineSm(
                               color: AppColors.textPrimary,
                               fontWeight: FontWeight.w700,
@@ -454,9 +461,8 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
                 future: _depsFuture,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(
-                      child: CircularProgressIndicator(
-                          color: AppColors.primaryFixed),
+                    return Center(
+                      child: CircularProgressIndicator(color: accentColor),
                     );
                   }
 
@@ -467,10 +473,7 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
                         categories: _allCategories,
                       );
 
-                  final targetTypeStr =
-                      _selectedType == TransactionType.expense
-                          ? 'EXPENSE'
-                          : 'INCOME';
+                  final targetTypeStr = isExpense ? 'EXPENSE' : 'INCOME';
                   final currentCategories = deps.categories
                       .where((c) => c.type.toUpperCase() == targetTypeStr)
                       .toList();
@@ -524,8 +527,9 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
                                   isDense: true,
                                   contentPadding:
                                       const EdgeInsets.symmetric(vertical: 10),
-                                  hintText:
-                                      'Optional title / note (e.g. Swiggy, Fuel)',
+                                  hintText: isExpense
+                                      ? 'Optional title / note (e.g. Swiggy, Fuel)'
+                                      : 'Optional title / note (e.g. Salary, Client Payout, Bonus)',
                                   hintStyle: AppTypography.bodySm(
                                       color: AppColors.textMuted),
                                   icon: const Icon(
@@ -539,7 +543,7 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
 
                             const SizedBox(height: 16),
 
-                            // 3. Paid By Payer Row (Dynamic members)
+                            // 3. Paid By / Income By Selector (Dynamic members & contextual labels)
                             PaidByPayerSelector(
                               members: deps.members,
                               selectedMemberId: _selectedPayerId ??
@@ -548,17 +552,28 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
                                       : ''),
                               onSelected: (id) =>
                                   setState(() => _selectedPayerId = id),
+                              title: isExpense ? 'Paid By' : 'Income By',
+                              subtitle: isExpense
+                                  ? 'Family Account'
+                                  : 'Inflow Source',
+                              activeColor: accentColor,
                             ),
 
                             const SizedBox(height: 16),
 
-                            // 4. Beneficiary / Spent For Chips (Dynamic members)
+                            // 4. Spent For / Income For (Whom?) Chips (Dynamic members & contextual labels)
                             BeneficiaryChipSelector(
                               members: deps.members,
                               selectedBeneficiaryMemberId:
                                   _selectedBeneficiaryMemberId,
                               onSelected: (id) => setState(
                                   () => _selectedBeneficiaryMemberId = id),
+                              title: isExpense
+                                  ? 'Spent For (Whom?)'
+                                  : 'Income For (Whom?)',
+                              subtitle:
+                                  isExpense ? 'Full Share' : 'Family Inflow',
+                              activeColor: accentColor,
                             ),
 
                             const SizedBox(height: 16),
@@ -569,10 +584,11 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
                               selectedCategoryId: _selectedCategoryId,
                               onSelected: (catId) =>
                                   setState(() => _selectedCategoryId = catId),
+                              activeColor: accentColor,
                             ),
 
-                            // 6. Conjoined Event Tag Card (Shared Pot) - shown if active event exists
-                            if (deps.activeEvent != null) ...[
+                            // 6. Conjoined Event Tag Card (Shared Pot) - shown ONLY for Expense if active event exists
+                            if (isExpense && deps.activeEvent != null) ...[
                               const SizedBox(height: 16),
                               ConjoinedEventTagCard(
                                 event: deps.activeEvent!,
@@ -601,12 +617,11 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 16),
                                 decoration: BoxDecoration(
-                                  color: AppColors.primaryFixed,
+                                  color: accentColor,
                                   borderRadius: BorderRadius.circular(16),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: AppColors.primaryFixed
-                                          .withValues(alpha: 0.28),
+                                      color: accentColor.withValues(alpha: 0.28),
                                       blurRadius: 28,
                                       offset: const Offset(0, 8),
                                     ),
@@ -626,8 +641,7 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
                                             Text(
-                                              _selectedType ==
-                                                      TransactionType.expense
+                                              isExpense
                                                   ? 'Record Expense'
                                                   : 'Record Income',
                                               style: AppTypography.headlineSm(
@@ -669,8 +683,7 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
                               color: AppColors.surface01,
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(
-                                color: AppColors.primaryFixed
-                                    .withValues(alpha: 0.35),
+                                color: accentColor.withValues(alpha: 0.35),
                                 width: 1,
                               ),
                               boxShadow: [
@@ -690,8 +703,7 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
-                                        color: _selectedType ==
-                                                TransactionType.expense
+                                        color: isExpense
                                             ? AppColors.primaryFixed
                                                 .withValues(alpha: 0.15)
                                             : AppColors.tertiaryFixed
@@ -699,15 +711,9 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
                                         borderRadius: BorderRadius.circular(6),
                                       ),
                                       child: Text(
-                                        _selectedType ==
-                                                TransactionType.expense
-                                            ? 'EXPENSE'
-                                            : 'INCOME',
+                                        isExpense ? 'EXPENSE' : 'INCOME',
                                         style: AppTypography.labelSm(
-                                          color: _selectedType ==
-                                                  TransactionType.expense
-                                              ? AppColors.primaryFixed
-                                              : AppColors.tertiaryFixed,
+                                          color: accentColor,
                                           fontWeight: FontWeight.w800,
                                         ).copyWith(fontSize: 9),
                                       ),

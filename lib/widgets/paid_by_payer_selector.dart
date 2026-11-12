@@ -7,12 +7,18 @@ class PaidByPayerSelector extends StatelessWidget {
   final List<FamilyMember> members;
   final String selectedMemberId;
   final ValueChanged<String> onSelected;
+  final String title;
+  final String subtitle;
+  final Color activeColor;
 
   const PaidByPayerSelector({
     super.key,
     required this.members,
     required this.selectedMemberId,
     required this.onSelected,
+    this.title = 'Paid By',
+    this.subtitle = 'Family Account',
+    this.activeColor = AppColors.primaryFixed,
   });
 
   String _formatRole(FamilyMember member) {
@@ -59,16 +65,16 @@ class PaidByPayerSelector extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Paid By',
+              title,
               style: AppTypography.labelMd(
                 color: AppColors.textMuted,
                 fontWeight: FontWeight.w500,
               ),
             ),
             Text(
-              'Family Account',
+              subtitle,
               style: AppTypography.labelSm(
-                color: AppColors.primaryFixed,
+                color: activeColor,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -150,14 +156,14 @@ class PaidByPayerSelector extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected
-                ? AppColors.primaryFixed.withValues(alpha: 0.3)
+                ? activeColor.withValues(alpha: 0.3)
                 : AppColors.ghostBorder,
             width: 1,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: AppColors.primaryFixed.withValues(alpha: 0.12),
+                    color: activeColor.withValues(alpha: 0.12),
                     blurRadius: 16,
                   ),
                 ]
@@ -173,7 +179,7 @@ class PaidByPayerSelector extends StatelessWidget {
                 color: avatarBg,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isSelected ? AppColors.primaryFixed : Colors.transparent,
+                  color: isSelected ? activeColor : Colors.transparent,
                   width: 2,
                 ),
               ),
@@ -211,7 +217,7 @@ class PaidByPayerSelector extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: AppTypography.bodySm(
-                      color: isSelected ? const Color(0xFFA6CF00) : AppColors.textMuted,
+                      color: isSelected ? activeColor : AppColors.textMuted,
                     ).copyWith(
                       fontSize: 11,
                     ),
@@ -225,7 +231,9 @@ class PaidByPayerSelector extends StatelessWidget {
               isSelected
                   ? Icons.check_circle_rounded
                   : Icons.radio_button_unchecked_rounded,
-              color: isSelected ? AppColors.primaryFixed : AppColors.textMuted.withValues(alpha: 0.4),
+              color: isSelected
+                  ? activeColor
+                  : AppColors.textMuted.withValues(alpha: 0.4),
               size: 20,
             ),
           ],

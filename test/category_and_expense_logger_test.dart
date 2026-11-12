@@ -331,6 +331,10 @@ void main() {
       // Verify category 'Groceries' is present
       expect(find.text('Groceries'), findsOneWidget);
 
+      // Verify Expense contextual labels
+      expect(find.text('Paid By'), findsOneWidget);
+      expect(find.text('Spent For (Whom?)'), findsOneWidget);
+
       // Tap numeric keypad '2', '5', '0'
       await tester.tap(find.text('2'));
       await tester.pump();
@@ -391,6 +395,12 @@ void main() {
 
       // Category list should now show 'Salary'
       expect(find.text('Salary'), findsOneWidget);
+
+      // Verify Income contextual labels
+      expect(find.text('Income By'), findsOneWidget);
+      expect(find.text('Income For (Whom?)'), findsOneWidget);
+      expect(find.text('Paid By'), findsNothing);
+      expect(find.text('Spent For (Whom?)'), findsNothing);
 
       // Enter 50000
       await tester.tap(find.text('5'));
