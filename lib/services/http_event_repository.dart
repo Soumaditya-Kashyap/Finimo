@@ -125,10 +125,21 @@ class HttpEventRepository implements EventRepository {
 
   @override
   Future<void> deleteEvent(String id) async {
-    await apiClient.delete(
-      ApiConfig.eventById(id),
-      requiresAuth: true,
-    );
+    try {
+      await apiClient.delete(
+        ApiConfig.eventById(id),
+        requiresAuth: true,
+      );
+    } on ApiException catch (e) {
+      if (e.statusCode == 409) {
+        // If hard delete fails with 409 (because historical or soft-deleted transactions
+        // reference this event via foreign key), safely archive the event so it is
+        // removed from active sinking pools and dashboards.
+        await updateEvent(id, status: 'ARCHIVED');
+        return;
+      }
+      rethrow;
+    }
   }
 
   @override

@@ -358,5 +358,48 @@ void main() {
       expect(find.text('Ethnic Garments'), findsOneWidget);
       expect(find.text('Priya Mehta'), findsWidgets);
     });
+
+    testWidgets('ConjoinedEventDetailScreen deletes event pool on confirmation',
+        (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ConjoinedEventDetailScreen(
+            repository: homeRepo,
+            eventRepository: eventRepo,
+            eventId: 'ev_pujo',
+            eventTitle: 'Durga Puja 2026',
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Tap 3-dots popup menu
+      final popupMenu = find.byType(PopupMenuButton<String>);
+      expect(popupMenu, findsOneWidget);
+      await tester.tap(popupMenu);
+      await tester.pumpAndSettle();
+
+      // Tap Delete Event
+      final deleteItem = find.text('Delete Event');
+      expect(deleteItem, findsOneWidget);
+      await tester.tap(deleteItem);
+      await tester.pumpAndSettle();
+
+      // Verify confirmation dialog
+      expect(find.text('Delete Event Pool?'), findsOneWidget);
+      final confirmBtn = find.text('Delete Pool');
+      expect(confirmBtn, findsOneWidget);
+      await tester.tap(confirmBtn);
+      await tester.pumpAndSettle();
+
+      // Event should be removed from mock repo
+      final remaining = await eventRepo.getEvents();
+      expect(remaining.where((e) => e['id'] == 'ev_pujo'), isEmpty);
+    });
   });
 }

@@ -55,14 +55,17 @@ class HttpDashboardRepository implements DashboardRepository {
   @override
   Future<ConjoinedEventSummary?> getActiveConjoinedEvent() async {
     try {
-      final response = await apiClient.get(ApiConfig.events, requiresAuth: true);
+      final response = await apiClient.get(
+        ApiConfig.events,
+        queryParameters: {'status': 'ACTIVE'},
+        requiresAuth: true,
+      );
       if (response is List && response.isNotEmpty) {
-        // Try finding an event with status == 'ACTIVE' or take the first event
         final activeItem = response.firstWhere(
           (item) =>
               item is Map<String, dynamic> &&
               item['status']?.toString().toUpperCase() == 'ACTIVE',
-          orElse: () => response.first,
+          orElse: () => null,
         );
 
         if (activeItem is Map<String, dynamic>) {

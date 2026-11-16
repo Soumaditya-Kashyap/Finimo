@@ -251,8 +251,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   ActiveEventSnapshotCard(
                     event: data.activeEvent,
                     onBreakdownTap: data.activeEvent != null
-                        ? () {
-                            Navigator.of(context).push(
+                        ? () async {
+                            final result = await Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (ctx) => ConjoinedEventDetailScreen(
                                   repository: widget.repository,
@@ -262,6 +262,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
                             );
+                            if (result == true && mounted) {
+                              _loadData(selectedMemberId: _selectedMemberId);
+                            }
                           }
                         : null,
                   ),

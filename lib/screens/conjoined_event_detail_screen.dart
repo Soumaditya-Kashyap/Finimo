@@ -90,6 +90,7 @@ class _ConjoinedEventDetailScreenState
   }
 
   Future<void> _confirmDeleteEvent() async {
+    final eventName = _detail?.eventTitle ?? widget.eventTitle;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -98,7 +99,7 @@ class _ConjoinedEventDetailScreenState
         title: const Text('Delete Event Pool?',
             style: TextStyle(color: AppColors.textPrimary)),
         content: Text(
-          'Are you sure you want to delete "${_detail?.eventTitle ?? "this event"}"? You can only delete events with no active receipts.',
+          'Are you sure you want to delete "$eventName"? This will remove the shared sinking pool from all dashboards.',
           style: const TextStyle(color: AppColors.textMuted),
         ),
         actions: [
@@ -124,7 +125,7 @@ class _ConjoinedEventDetailScreenState
         Navigator.of(context).pop(true);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Event "${_detail?.eventTitle}" deleted'),
+            content: Text('Event "$eventName" removed'),
             backgroundColor: AppColors.surface03,
           ),
         );
