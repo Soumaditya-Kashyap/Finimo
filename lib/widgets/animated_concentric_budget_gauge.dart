@@ -115,44 +115,57 @@ class _AnimatedConcentricBudgetGaugeState
 
           Column(
             children: [
-              // Top Status Pill: Optimal Pacing (18 Days Left)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                decoration: BoxDecoration(
-                  color: AppColors.surface02,
-                  borderRadius: BorderRadius.circular(9999),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryFixed,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primaryFixed.withValues(alpha: 0.8),
-                            blurRadius: 6,
-                            spreadRadius: 1,
+              // Top Status Pill: Dynamic Pacing / No Budget Status
+              Builder(
+                builder: (context) {
+                  final hasBudget = widget.data.safeCapAmount > 0;
+                  final (statusText, statusColor) = !hasBudget
+                      ? ('NO BUDGET SET (${widget.data.daysLeft} DAYS LEFT)', AppColors.textMuted)
+                      : widget.data.budgetRemainingPct <= 0
+                          ? ('BUDGET EXCEEDED', AppColors.dangerCoral)
+                          : widget.data.budgetRemainingPct <= 20
+                              ? ('CAUTION (LOW BUFFER)', const Color(0xFFFF9500))
+                              : ('ON TRACK (${widget.data.daysLeft} DAYS LEFT)', AppColors.primaryFixed);
+
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface02,
+                      borderRadius: BorderRadius.circular(9999),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: statusColor,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: statusColor.withValues(alpha: 0.8),
+                                blurRadius: 6,
+                                spreadRadius: 1,
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          statusText,
+                          style: AppTypography.labelSm(
+                            color: statusColor,
+                            fontWeight: FontWeight.w700,
+                          ).copyWith(
+                            letterSpacing: 0.8,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'ON TRACK (${widget.data.daysLeft} DAYS LEFT)',
-                      style: AppTypography.labelSm(
-                        color: AppColors.primaryFixed,
-                        fontWeight: FontWeight.w700,
-                      ).copyWith(
-                        letterSpacing: 0.8,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ],
-                ),
+                  );
+                },
               ),
 
               const SizedBox(height: 22),
@@ -165,6 +178,8 @@ class _AnimatedConcentricBudgetGaugeState
                   animation: _curveAnimation,
                   builder: (context, child) {
                     final progress = _curveAnimation.value;
+                    final hasBudget = widget.data.safeCapAmount > 0;
+
                     return CustomPaint(
                       painter: _ConcentricGaugePainter(
                         runwayProgress: widget.data.runwayProgress * progress,
@@ -175,7 +190,9 @@ class _AnimatedConcentricBudgetGaugeState
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              '${(widget.data.budgetRemainingPct * progress).round()}%',
+                              hasBudget
+                                  ? '${(widget.data.budgetRemainingPct * progress).round()}%'
+                                  : '0%',
                               style: AppTypography.displayLg(
                                 color: AppColors.textPrimary,
                               ).copyWith(
@@ -185,7 +202,7 @@ class _AnimatedConcentricBudgetGaugeState
                               ),
                             ),
                             Text(
-                              'BUDGET REMAINING',
+                              hasBudget ? 'BUDGET REMAINING' : 'NO BUDGET SET',
                               style: AppTypography.labelSm(
                                 color: AppColors.textMuted,
                                 fontWeight: FontWeight.w700,
@@ -196,11 +213,15 @@ class _AnimatedConcentricBudgetGaugeState
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '${CurrencyFormatter.formatInr(widget.data.budgetRemainingAmount)} left',
+                              hasBudget
+                                  ? '${CurrencyFormatter.formatInr(widget.data.budgetRemainingAmount)} left'
+                                  : 'Set monthly limit below',
                               style: AppTypography.labelMd(
-                                color: AppColors.primaryFixed,
-                                fontWeight: FontWeight.w700,
-                              ).copyWith(fontSize: 13),
+                                color: hasBudget
+                                    ? AppColors.primaryFixed
+                                    : AppColors.textMuted,
+                                fontWeight: FontWeight.w600,
+                              ).copyWith(fontSize: 12),
                             ),
                           ],
                         ),

@@ -57,7 +57,7 @@ class TargetsDashboardData {
     final now = DateTime.now();
     final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
     final daysLeft = (daysInMonth - now.day).clamp(0, 31);
-    final pacingProgress = (now.day / daysInMonth).clamp(0.0, 1.0);
+    final pacingProgress = totalCap > 0 ? (now.day / daysInMonth).clamp(0.0, 1.0) : 0.0;
     final runwayProgress = totalCap > 0 ? (effectiveSpent / totalCap).clamp(0.0, 1.0) : 0.0;
 
     return TargetsDashboardData(
