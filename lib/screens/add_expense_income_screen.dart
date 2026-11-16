@@ -25,6 +25,7 @@ class AddExpenseIncomeScreen extends StatefulWidget {
   final TransactionRepository? transactionRepository;
   final DashboardRepository? dashboardRepository;
   final TransactionType initialType;
+  final String? initialEventId;
 
   const AddExpenseIncomeScreen({
     super.key,
@@ -34,6 +35,7 @@ class AddExpenseIncomeScreen extends StatefulWidget {
     this.transactionRepository,
     this.dashboardRepository,
     this.initialType = TransactionType.expense,
+    this.initialEventId,
   });
 
   /// Opens the screen as a full-height modal bottom sheet extending till top of screen
@@ -45,6 +47,7 @@ class AddExpenseIncomeScreen extends StatefulWidget {
     TransactionRepository? transactionRepository,
     DashboardRepository? dashboardRepository,
     TransactionType initialType = TransactionType.expense,
+    String? initialEventId,
   }) {
     return showModalBottomSheet<bool>(
       context: context,
@@ -57,6 +60,7 @@ class AddExpenseIncomeScreen extends StatefulWidget {
         transactionRepository: transactionRepository,
         dashboardRepository: dashboardRepository,
         initialType: initialType,
+        initialEventId: initialEventId,
       ),
     );
   }
@@ -296,11 +300,13 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
               ? _selectedBeneficiaryMemberId
               : null;
 
-      final eventId = (isExpense &&
-              _isTaggedToEvent &&
-              _activeEvent != null &&
-              uuidRegex.hasMatch(_activeEvent!.id))
-          ? _activeEvent!.id
+      final eventId = isExpense
+          ? (widget.initialEventId ??
+              (_isTaggedToEvent &&
+                      _activeEvent != null &&
+                      uuidRegex.hasMatch(_activeEvent!.id)
+                  ? _activeEvent!.id
+                  : null))
           : null;
 
       await _transactionRepo.createTransaction(

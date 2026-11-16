@@ -15,6 +15,61 @@ class TargetsDashboardData {
     required this.runwayProgress,
   });
 
+  factory TargetsDashboardData.compute({
+    required List<dynamic> limits,
+    required double monthlySpent,
+    double? overallBudgetCap,
+  }) {
+    double totalCap = overallBudgetCap ?? 0.0;
+    double categorySpent = 0.0;
+
+    for (final item in limits) {
+      if (item is Map<String, dynamic>) {
+        final cap = double.tryParse(item['limit_amount']?.toString() ??
+                item['limit_cap']?.toString() ??
+                '0') ??
+            0.0;
+        final sp = double.tryParse(item['current_period_spent']?.toString() ??
+                item['current_spent']?.toString() ??
+                '0') ??
+            0.0;
+        if (overallBudgetCap == null || overallBudgetCap == 0) {
+          totalCap += cap;
+        }
+        categorySpent += sp;
+      } else {
+        // If it's MonthlyLimitItem
+        try {
+          final cap = (item as dynamic).limitCap as double? ?? 0.0;
+          final sp = (item as dynamic).currentSpent as double? ?? 0.0;
+          if (overallBudgetCap == null || overallBudgetCap == 0) {
+            totalCap += cap;
+          }
+          categorySpent += sp;
+        } catch (_) {}
+      }
+    }
+
+    final double effectiveSpent = monthlySpent > 0 ? monthlySpent : categorySpent;
+    final double remaining = totalCap > effectiveSpent ? (totalCap - effectiveSpent) : 0.0;
+    final double remainingPct = totalCap > 0 ? (remaining / totalCap * 100) : 0.0;
+
+    final now = DateTime.now();
+    final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
+    final daysLeft = (daysInMonth - now.day).clamp(0, 31);
+    final pacingProgress = (now.day / daysInMonth).clamp(0.0, 1.0);
+    final runwayProgress = totalCap > 0 ? (effectiveSpent / totalCap).clamp(0.0, 1.0) : 0.0;
+
+    return TargetsDashboardData(
+      budgetRemainingPct: remainingPct,
+      budgetRemainingAmount: remaining,
+      safeCapAmount: totalCap,
+      daysLeft: daysLeft,
+      pacingProgress: pacingProgress,
+      runwayProgress: runwayProgress,
+    );
+  }
+
   factory TargetsDashboardData.fromJson(Map<String, dynamic> json) {
     return TargetsDashboardData(
       budgetRemainingPct: (json['budget_remaining_pct'] as num).toDouble(),
@@ -27,11 +82,11 @@ class TargetsDashboardData {
   }
 
   Map<String, dynamic> toJson() => {
-    'budget_remaining_pct': budgetRemainingPct,
-    'budget_remaining_amount': budgetRemainingAmount,
-    'safe_cap_amount': safeCapAmount,
-    'days_left': daysLeft,
-    'pacing_progress': pacingProgress,
-    'runway_progress': runwayProgress,
-  };
+        'budget_remaining_pct': budgetRemainingPct,
+        'budget_remaining_amount': budgetRemainingAmount,
+        'safe_cap_amount': safeCapAmount,
+        'days_left': daysLeft,
+        'pacing_progress': pacingProgress,
+        'runway_progress': runwayProgress,
+      };
 }

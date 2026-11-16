@@ -5,8 +5,10 @@ import 'home_screen.dart';
 import 'targets_screen.dart';
 import '../services/category_repository.dart';
 import '../services/dashboard_repository.dart';
+import '../services/event_repository.dart';
 import '../services/family_repository.dart';
 import '../services/home_repository.dart';
+import '../services/target_repository.dart';
 import '../services/transaction_repository.dart';
 import '../theme/app_colors.dart';
 import '../widgets/finimo_bottom_nav_bar.dart';
@@ -17,6 +19,8 @@ class MainNavigationShell extends StatefulWidget {
   final FamilyRepository? familyRepository;
   final CategoryRepository? categoryRepository;
   final DashboardRepository? dashboardRepository;
+  final TargetRepository? targetRepository;
+  final EventRepository? eventRepository;
 
   const MainNavigationShell({
     super.key,
@@ -25,6 +29,8 @@ class MainNavigationShell extends StatefulWidget {
     this.familyRepository,
     this.categoryRepository,
     this.dashboardRepository,
+    this.targetRepository,
+    this.eventRepository,
   });
 
   @override
@@ -65,6 +71,10 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
               // Tab 2: Targets
               TargetsScreen(
                 repository: widget.homeRepository,
+                targetRepository: widget.targetRepository,
+                eventRepository: widget.eventRepository,
+                categoryRepository: widget.categoryRepository,
+                dashboardRepository: widget.dashboardRepository,
                 isActive: _currentIndex == 2,
                 onSeeLedgerTap: () {
                   setState(() => _currentIndex = 1);

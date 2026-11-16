@@ -52,13 +52,14 @@ class TransactionItem {
     final amountStr = json['amount']?.toString() ?? '0';
     final amount = double.tryParse(amountStr) ?? 0.0;
 
-    final typeStr = json['type']?.toString().toUpperCase() ?? 'EXPENSE';
-    final type =
-        typeStr == 'INCOME' ? TransactionType.income : TransactionType.expense;
-
     final category = json['category'] as Map<String, dynamic>? ?? {};
     final categoryName = category['name']?.toString() ?? 'General';
     final categoryIcon = category['icon_key']?.toString() ?? 'shopping_bag';
+    final categoryType = category['type']?.toString().toUpperCase();
+
+    final typeStr = json['type']?.toString().toUpperCase() ?? 'EXPENSE';
+    final isIncome = typeStr == 'INCOME' || categoryType == 'INCOME';
+    final type = isIncome ? TransactionType.income : TransactionType.expense;
 
     // Parse date for subtitle e.g. "08 Oct"
     String datePart = '';

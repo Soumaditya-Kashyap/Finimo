@@ -58,15 +58,16 @@ class LedgerTransaction {
     final title = json['title']?.toString() ?? 'Transaction';
     final amountStr = json['amount']?.toString() ?? '0';
     final amount = double.tryParse(amountStr) ?? 0.0;
-    final typeStr = json['type']?.toString().toUpperCase() ?? 'EXPENSE';
-    final isExpense = typeStr != 'INCOME';
-
     final category = json['category'] as Map<String, dynamic>? ?? {};
     final categoryId = category['id']?.toString();
     final categoryName = category['name']?.toString() ?? 'General';
     final categoryIconKey = category['icon_key']?.toString();
     final categoryColorHex = category['color_hex']?.toString();
+    final categoryType = category['type']?.toString().toUpperCase();
     final icon = TransactionCategory.getIconFromKey(categoryIconKey);
+
+    final typeStr = json['type']?.toString().toUpperCase() ?? 'EXPENSE';
+    final isExpense = typeStr == 'INCOME' || categoryType == 'INCOME' ? false : true;
 
     final rawDate = json['transaction_date']?.toString();
     DateTime parsedDate = DateTime.now();
