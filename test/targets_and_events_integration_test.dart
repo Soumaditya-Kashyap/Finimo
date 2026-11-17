@@ -358,15 +358,17 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      // Create a master target of 30,000 and Groceries category target of 15,000
+      // Create a master target of 30,000 and Groceries category target of 15,000.
+      // Simulate backend initially sending stale/aggregated 100% warning metrics:
       final tRepo = MockTargetRepository(initialTargets: [
         {
           'id': 'master_target',
           'target_name': 'Total Family Monthly Budget',
           'limit_amount': '30000.00',
-          'current_period_spent': '0.00',
-          'percentage_consumed': 0.0,
+          'current_period_spent': '6000.00',
+          'percentage_consumed': 20.0,
           'notify_threshold_pct': 80,
+          'is_warning': false,
           'is_active': true,
           'category_id': null,
         },
@@ -374,9 +376,10 @@ void main() {
           'id': 'cat_target',
           'target_name': 'Groceries',
           'limit_amount': '15000.00',
-          'current_period_spent': '0.00',
-          'percentage_consumed': 0.0,
+          'current_period_spent': '15000.00',
+          'percentage_consumed': 100.0,
           'notify_threshold_pct': 80,
+          'is_warning': true,
           'is_active': true,
           'category_id': 'cat_groceries',
         },
@@ -412,6 +415,12 @@ void main() {
       // Master budget should remain at 100% / ₹30,000 left because event expense is isolated!
       expect(find.text('100%'), findsOneWidget);
       expect(find.text('₹30,000 left'), findsOneWidget);
+
+      // Category limit should be recalculated with isolated spend (0 spent, 0% used, no warning!)
+      expect(find.text('0% used'), findsOneWidget);
+      expect(find.text('Stable outflow velocity'), findsOneWidget);
+      expect(find.byIcon(Icons.warning_amber_rounded), findsNothing);
+      expect(find.text('₹15,000 buffer'), findsOneWidget);
     });
   });
 

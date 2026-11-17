@@ -135,9 +135,14 @@ class _TargetsScreenState extends State<TargetsScreen> {
           final cat = tx['category'] as Map<String, dynamic>?;
           final catId =
               cat?['id']?.toString() ?? tx['category_id']?.toString();
+          final catName = cat?['name']?.toString().toLowerCase().trim();
           if (catId != null && catId.isNotEmpty) {
             categoryRegularSpentMap[catId] =
                 (categoryRegularSpentMap[catId] ?? 0.0) + amt;
+          }
+          if (catName != null && catName.isNotEmpty) {
+            categoryRegularSpentMap[catName] =
+                (categoryRegularSpentMap[catName] ?? 0.0) + amt;
           }
         }
       }
@@ -146,32 +151,12 @@ class _TargetsScreenState extends State<TargetsScreen> {
       final limits = rawTargets.map((json) {
         final item = MonthlyLimitItem.fromApiResponse(json);
         if (item.isMaster) {
-          final pct = item.limitCap > 0
-              ? (regularMonthlySpent / item.limitCap * 100)
-              : 0.0;
-          final buf = item.limitCap - regularMonthlySpent;
-          return item.copyWith(
-            currentSpent: regularMonthlySpent,
-            percentageUsed: pct,
-            statusText: buf > 0
-                ? '₹${CurrencyFormatter.formatInr(buf)} buffer'
-                : (buf == 0
-                    ? 'Limit reached'
-                    : '₹${CurrencyFormatter.formatInr(buf.abs())} exceeded'),
-          );
+          return item.withIsolatedSpend(regularMonthlySpent);
         } else if (item.categoryId != null) {
-          final sp = categoryRegularSpentMap[item.categoryId!] ?? 0.0;
-          final pct = item.limitCap > 0 ? (sp / item.limitCap * 100) : 0.0;
-          final buf = item.limitCap - sp;
-          return item.copyWith(
-            currentSpent: sp,
-            percentageUsed: pct,
-            statusText: buf > 0
-                ? '₹${CurrencyFormatter.formatInr(buf)} buffer'
-                : (buf == 0
-                    ? 'Limit reached'
-                    : '₹${CurrencyFormatter.formatInr(buf.abs())} exceeded'),
-          );
+          final sp = categoryRegularSpentMap[item.categoryId!] ??
+              categoryRegularSpentMap[item.title.toLowerCase().trim()] ??
+              0.0;
+          return item.withIsolatedSpend(sp);
         }
         return item;
       }).toList();
@@ -809,7 +794,7 @@ class _TargetsScreenState extends State<TargetsScreen> {
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    'Allocated: ₹${CurrencyFormatter.formatInr(_gaugeData.allocatedCategoryAmount)} • Cushion: ₹${CurrencyFormatter.formatInr(_gaugeData.unallocatedBuffer)}',
+                                    'Allocated: ${CurrencyFormatter.formatInr(_gaugeData.allocatedCategoryAmount)} • Cushion: ${CurrencyFormatter.formatInr(_gaugeData.unallocatedBuffer)}',
                                     style: AppTypography.bodySm(
                                             color: AppColors.textMuted)
                                         .copyWith(fontSize: 11),
@@ -829,7 +814,7 @@ class _TargetsScreenState extends State<TargetsScreen> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  '₹${CurrencyFormatter.formatInr(masterTarget.limitCap)}',
+                                  CurrencyFormatter.formatInr(masterTarget.limitCap),
                                   style: AppTypography.labelSm(
                                     color: AppColors.primaryFixed,
                                     fontWeight: FontWeight.w700,
@@ -958,7 +943,7 @@ class _TargetsScreenState extends State<TargetsScreen> {
                         Text(
                           masterTarget == null
                               ? 'Set your Master Monthly Budget above to unlock category sub-limits.'
-                              : 'Allocate sub-limits for Groceries, Dining, etc. from your ₹${CurrencyFormatter.formatInr(_gaugeData.unallocatedBuffer)} cushion.',
+                              : 'Allocate sub-limits for Groceries, Dining, etc. from your ${CurrencyFormatter.formatInr(_gaugeData.unallocatedBuffer)} cushion.',
                           textAlign: TextAlign.center,
                           style:
                               AppTypography.bodySm(color: AppColors.textMuted),

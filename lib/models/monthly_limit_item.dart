@@ -12,6 +12,7 @@ class MonthlyLimitItem {
   final String statusText; // '₹5,800 buffer', '₹1,150 left', 'On track'
   final String footerStatus; // 'Stable outflow velocity', 'Watch spend pace', '₹3,500 cushion'
   final Color accentColor;
+  final Color? baseColor;
   final IconData icon;
   final bool isWarning;
   final String? categoryId;
@@ -27,6 +28,7 @@ class MonthlyLimitItem {
     required this.statusText,
     required this.footerStatus,
     required this.accentColor,
+    this.baseColor,
     required this.icon,
     this.isWarning = false,
     this.categoryId,
@@ -58,11 +60,11 @@ class MonthlyLimitItem {
     final buffer = limitCap - currentSpent;
     final String statusText;
     if (buffer > 0) {
-      statusText = '₹${CurrencyFormatter.formatInr(buffer)} buffer';
+      statusText = '${CurrencyFormatter.formatInr(buffer)} buffer';
     } else if (buffer == 0) {
       statusText = 'Limit reached';
     } else {
-      statusText = '₹${CurrencyFormatter.formatInr(buffer.abs())} exceeded';
+      statusText = '${CurrencyFormatter.formatInr(buffer.abs())} exceeded';
     }
 
     final String footerStatus;
@@ -86,11 +88,11 @@ class MonthlyLimitItem {
         ? TransactionCategory.getIconFromKey(iconKey)
         : Icons.roofing_outlined;
 
-    final accentColor = isWarning
-        ? AppColors.dangerCoral
-        : (colorHex != null && colorHex.isNotEmpty
-            ? TransactionCategory.getColorFromHex(colorHex)
-            : AppColors.primaryFixed);
+    final baseColor = colorHex != null && colorHex.isNotEmpty
+        ? TransactionCategory.getColorFromHex(colorHex)
+        : AppColors.primaryFixed;
+
+    final accentColor = isWarning ? AppColors.dangerCoral : baseColor;
 
     return MonthlyLimitItem(
       id: id,
@@ -101,6 +103,7 @@ class MonthlyLimitItem {
       statusText: statusText,
       footerStatus: footerStatus,
       accentColor: accentColor,
+      baseColor: baseColor,
       icon: icon,
       isWarning: isWarning,
       categoryId: categoryId,
@@ -122,6 +125,7 @@ class MonthlyLimitItem {
       statusText: json['status_text'] as String,
       footerStatus: json['footer_status'] as String,
       accentColor: const Color(0xFFC3F400),
+      baseColor: const Color(0xFFC3F400),
       icon: Icons.roofing_outlined,
       isWarning: json['is_warning'] as bool? ?? false,
       categoryId: json['category_id'] as String?,
@@ -132,6 +136,46 @@ class MonthlyLimitItem {
 
   bool get isMaster => categoryId == null || categoryId!.isEmpty;
 
+  MonthlyLimitItem withIsolatedSpend(double isolatedSpent) {
+    final double pct = limitCap > 0 ? (isolatedSpent / limitCap * 100) : 0.0;
+    final double buffer = limitCap - isolatedSpent;
+    final int notifyPct = notifyThresholdPct ?? 80;
+    final bool warning = pct >= notifyPct;
+
+    final String newStatusText;
+    if (buffer > 0) {
+      newStatusText = '${CurrencyFormatter.formatInr(buffer)} buffer';
+    } else if (buffer == 0) {
+      newStatusText = 'Limit reached';
+    } else {
+      newStatusText = '${CurrencyFormatter.formatInr(buffer.abs())} exceeded';
+    }
+
+    final String newFooterStatus;
+    if (pct >= 95) {
+      newFooterStatus = 'Limit exceeded alert';
+    } else if (pct >= 80) {
+      newFooterStatus = 'Watch spend pace';
+    } else if (pct >= 50) {
+      newFooterStatus = 'Pacing moderate';
+    } else {
+      newFooterStatus = 'Stable outflow velocity';
+    }
+
+    final Color effectiveBaseColor = baseColor ?? AppColors.primaryFixed;
+    final Color newAccent = warning ? AppColors.dangerCoral : effectiveBaseColor;
+
+    return copyWith(
+      currentSpent: isolatedSpent,
+      percentageUsed: pct,
+      statusText: newStatusText,
+      footerStatus: newFooterStatus,
+      isWarning: warning,
+      accentColor: newAccent,
+      baseColor: effectiveBaseColor,
+    );
+  }
+
   MonthlyLimitItem copyWith({
     String? id,
     String? title,
@@ -141,6 +185,7 @@ class MonthlyLimitItem {
     String? statusText,
     String? footerStatus,
     Color? accentColor,
+    Color? baseColor,
     IconData? icon,
     bool? isWarning,
     String? categoryId,
@@ -156,6 +201,7 @@ class MonthlyLimitItem {
       statusText: statusText ?? this.statusText,
       footerStatus: footerStatus ?? this.footerStatus,
       accentColor: accentColor ?? this.accentColor,
+      baseColor: baseColor ?? this.baseColor,
       icon: icon ?? this.icon,
       isWarning: isWarning ?? this.isWarning,
       categoryId: categoryId ?? this.categoryId,

@@ -48,11 +48,11 @@ class SinkingFundGoal {
     final needed = targetGoal - currentAmount;
     final String neededText;
     if (needed > 0) {
-      neededText = '₹${CurrencyFormatter.formatInr(needed)} needed';
+      neededText = '${CurrencyFormatter.formatInr(needed)} needed';
     } else if (needed == 0) {
       neededText = 'Target fully funded';
     } else {
-      neededText = '₹${CurrencyFormatter.formatInr(needed.abs())} over budget';
+      neededText = '${CurrencyFormatter.formatInr(needed.abs())} over budget';
     }
 
     final status = json['status']?.toString().toUpperCase() ?? 'ACTIVE';
