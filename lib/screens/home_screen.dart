@@ -3,7 +3,9 @@ import '../models/conjoined_event_summary.dart';
 import '../models/family_member.dart';
 import '../models/home_dashboard_data.dart';
 import '../models/transaction_item.dart';
+import '../services/category_repository.dart';
 import '../services/dashboard_repository.dart';
+import '../services/event_repository.dart';
 import '../services/family_repository.dart';
 import '../services/home_repository.dart';
 import '../services/transaction_repository.dart';
@@ -24,6 +26,8 @@ class HomeScreen extends StatefulWidget {
   final DashboardRepository? dashboardRepository;
   final FamilyRepository? familyRepository;
   final TransactionRepository? transactionRepository;
+  final CategoryRepository? categoryRepository;
+  final EventRepository? eventRepository;
   final VoidCallback? onSeeLedgerTap;
 
   const HomeScreen({
@@ -32,6 +36,8 @@ class HomeScreen extends StatefulWidget {
     this.dashboardRepository,
     this.familyRepository,
     this.transactionRepository,
+    this.categoryRepository,
+    this.eventRepository,
     this.onSeeLedgerTap,
   });
 
@@ -43,6 +49,8 @@ class _HomeScreenState extends State<HomeScreen> {
   late final DashboardRepository _dashboardRepo;
   late final FamilyRepository _familyRepo;
   late final TransactionRepository _transactionRepo;
+  late final CategoryRepository _categoryRepo;
+  late final EventRepository _eventRepo;
 
   late Future<_HomeScreenData> _futureData;
   _HomeScreenData? _lastLoadedData;
@@ -57,6 +65,10 @@ class _HomeScreenState extends State<HomeScreen> {
     _familyRepo = widget.familyRepository ?? HttpFamilyRepository();
     _transactionRepo =
         widget.transactionRepository ?? HttpTransactionRepository();
+    _categoryRepo =
+        widget.categoryRepository ?? HttpCategoryRepository();
+    _eventRepo =
+        widget.eventRepository ?? HttpEventRepository();
     _loadData();
   }
 
@@ -197,8 +209,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         context,
                         repository: widget.repository,
                         familyRepository: _familyRepo,
+                        categoryRepository: _categoryRepo,
                         transactionRepository: _transactionRepo,
                         dashboardRepository: _dashboardRepo,
+                        eventRepository: _eventRepo,
                         initialType: TransactionType.expense,
                       );
                       if (result == true && mounted) {
@@ -210,8 +224,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         context,
                         repository: widget.repository,
                         familyRepository: _familyRepo,
+                        categoryRepository: _categoryRepo,
                         transactionRepository: _transactionRepo,
                         dashboardRepository: _dashboardRepo,
+                        eventRepository: _eventRepo,
                         initialType: TransactionType.income,
                       );
                       if (result == true && mounted) {
@@ -223,9 +239,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         context,
                         repository: widget.repository,
                         familyRepository: _familyRepo,
+                        categoryRepository: _categoryRepo,
                         transactionRepository: _transactionRepo,
                         dashboardRepository: _dashboardRepo,
+                        eventRepository: _eventRepo,
                         initialType: TransactionType.expense,
+                        isEventExpenseOnly: true,
                       );
                       if (result == true && mounted) {
                         _loadData(selectedMemberId: _selectedMemberId);

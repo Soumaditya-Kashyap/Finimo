@@ -56,6 +56,8 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                 dashboardRepository: widget.dashboardRepository,
                 familyRepository: widget.familyRepository,
                 transactionRepository: widget.transactionRepository,
+                categoryRepository: widget.categoryRepository,
+                eventRepository: widget.eventRepository,
                 onSeeLedgerTap: () {
                   setState(() => _currentIndex = 1);
                 },

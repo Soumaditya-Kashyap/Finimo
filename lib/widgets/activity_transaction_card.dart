@@ -194,62 +194,68 @@ class ActivityTransactionCard extends StatelessWidget {
                     ),
                   ),
 
-                  // Right Badge or Stacked Member Badges
-                  if (transaction.isMultiBeneficiary)
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _buildMiniAvatar(
-                            'A', AppColors.primaryFixed, AppColors.canvasBase),
-                        Transform.translate(
-                          offset: const Offset(-4, 0),
-                          child: _buildMiniAvatar('P',
-                              AppColors.secondary, AppColors.canvasBase),
-                        ),
-                        Transform.translate(
-                          offset: const Offset(-8, 0),
-                          child: _buildMiniAvatar(
-                              'AY',
-                              AppColors.tertiaryFixed,
-                              AppColors.canvasBase),
-                        ),
-                      ],
-                    )
-                  else if (transaction.badgeText != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 2.5),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface03,
-                        borderRadius: BorderRadius.circular(9999),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (transaction.badgeColor != null) ...[
-                            Container(
-                              width: 5,
-                              height: 5,
-                              decoration: BoxDecoration(
-                                color: transaction.badgeColor,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                          ],
-                          Text(
-                            transaction.badgeText!,
-                            style: AppTypography.labelSm(
-                              color: transaction.badgeColor ??
-                                  AppColors.textMuted,
-                              fontWeight: FontWeight.w600,
-                            ).copyWith(
-                              fontSize: 10,
-                            ),
+                  // Right Badges: Event / Status Badge + Stacked Member Avatars
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (transaction.badgeText != null) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2.5),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface03,
+                            borderRadius: BorderRadius.circular(9999),
                           ),
-                        ],
-                      ),
-                    ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (transaction.badgeColor != null) ...[
+                                Container(
+                                  width: 5,
+                                  height: 5,
+                                  decoration: BoxDecoration(
+                                    color: transaction.badgeColor,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                              ],
+                              Text(
+                                transaction.badgeText!,
+                                style: AppTypography.labelSm(
+                                  color: transaction.badgeColor ??
+                                      AppColors.textMuted,
+                                  fontWeight: FontWeight.w600,
+                                ).copyWith(
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (transaction.isMultiBeneficiary)
+                          const SizedBox(width: 6),
+                      ],
+                      if (transaction.isMultiBeneficiary)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _buildMiniAvatar('A', AppColors.primaryFixed,
+                                AppColors.canvasBase),
+                            Transform.translate(
+                              offset: const Offset(-4, 0),
+                              child: _buildMiniAvatar('P',
+                                  AppColors.secondary, AppColors.canvasBase),
+                            ),
+                            Transform.translate(
+                              offset: const Offset(-8, 0),
+                              child: _buildMiniAvatar('AY',
+                                  AppColors.tertiaryFixed, AppColors.canvasBase),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
                 ],
               ),
             ),

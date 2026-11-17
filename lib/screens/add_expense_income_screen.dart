@@ -5,6 +5,7 @@ import '../models/transaction_category.dart';
 import '../models/transaction_item.dart';
 import '../services/category_repository.dart';
 import '../services/dashboard_repository.dart';
+import '../services/event_repository.dart';
 import '../services/family_repository.dart';
 import '../services/home_repository.dart';
 import '../services/transaction_repository.dart';
@@ -24,8 +25,10 @@ class AddExpenseIncomeScreen extends StatefulWidget {
   final CategoryRepository? categoryRepository;
   final TransactionRepository? transactionRepository;
   final DashboardRepository? dashboardRepository;
+  final EventRepository? eventRepository;
   final TransactionType initialType;
   final String? initialEventId;
+  final bool isEventExpenseOnly;
 
   const AddExpenseIncomeScreen({
     super.key,
@@ -34,8 +37,10 @@ class AddExpenseIncomeScreen extends StatefulWidget {
     this.categoryRepository,
     this.transactionRepository,
     this.dashboardRepository,
+    this.eventRepository,
     this.initialType = TransactionType.expense,
     this.initialEventId,
+    this.isEventExpenseOnly = false,
   });
 
   /// Opens the screen as a full-height modal bottom sheet extending till top of screen
@@ -46,8 +51,10 @@ class AddExpenseIncomeScreen extends StatefulWidget {
     CategoryRepository? categoryRepository,
     TransactionRepository? transactionRepository,
     DashboardRepository? dashboardRepository,
+    EventRepository? eventRepository,
     TransactionType initialType = TransactionType.expense,
     String? initialEventId,
+    bool isEventExpenseOnly = false,
   }) {
     return showModalBottomSheet<bool>(
       context: context,
@@ -59,8 +66,10 @@ class AddExpenseIncomeScreen extends StatefulWidget {
         categoryRepository: categoryRepository,
         transactionRepository: transactionRepository,
         dashboardRepository: dashboardRepository,
+        eventRepository: eventRepository,
         initialType: initialType,
         initialEventId: initialEventId,
+        isEventExpenseOnly: isEventExpenseOnly,
       ),
     );
   }
@@ -74,6 +83,7 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
   late final CategoryRepository _categoryRepo;
   late final TransactionRepository _transactionRepo;
   late final DashboardRepository _dashboardRepo;
+  late final EventRepository _eventRepo;
 
   late TransactionType _selectedType;
   String _rawAmount = '0.00';
@@ -87,7 +97,8 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
   final TextEditingController _notesController = TextEditingController();
 
   List<FamilyMember> _members = [];
-  ConjoinedEventSummary? _activeEvent;
+  List<ConjoinedEventSummary> _events = [];
+  ConjoinedEventSummary? _selectedEvent;
   List<TransactionCategory> _allCategories = [];
 
   late Future<_AddScreenDependencies> _depsFuture;
@@ -98,13 +109,19 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedType = widget.initialType;
+    _selectedType = widget.isEventExpenseOnly
+        ? TransactionType.expense
+        : widget.initialType;
+    if (widget.isEventExpenseOnly) {
+      _isTaggedToEvent = true;
+    }
     _familyRepo = widget.familyRepository ?? HttpFamilyRepository();
     _categoryRepo = widget.categoryRepository ?? HttpCategoryRepository();
     _transactionRepo =
         widget.transactionRepository ?? HttpTransactionRepository();
     _dashboardRepo =
         widget.dashboardRepository ?? HttpDashboardRepository();
+    _eventRepo = widget.eventRepository ?? HttpEventRepository();
 
     _scrollController.addListener(_onScroll);
     _depsFuture = _loadInitialDependencies();
@@ -115,22 +132,44 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
       _familyRepo
           .getFamilyMembers()
           .catchError((_) => widget.repository.getFamilyMembers()),
-      _dashboardRepo
-          .getActiveConjoinedEvent()
-          .catchError((_) => null),
+      _eventRepo
+          .getEvents(status: 'ACTIVE')
+          .catchError((_) => <Map<String, dynamic>>[]),
       _categoryRepo
           .getCategories()
           .catchError((_) => TransactionCategory.defaultCategories),
+      _dashboardRepo
+          .getActiveConjoinedEvent()
+          .catchError((_) => null),
     ]);
 
     final members = (results[0] as List<FamilyMember>?) ?? [];
-    final activeEvent = results[1] as ConjoinedEventSummary?;
+    final rawEvents =
+        (results[1] as List?)?.whereType<Map<String, dynamic>>().toList() ?? [];
+    List<ConjoinedEventSummary> events = rawEvents
+        .map((e) => ConjoinedEventSummary.fromApiResponse(e))
+        .toList();
+
+    final fallbackEvent = results[3] as ConjoinedEventSummary?;
+    if (events.isEmpty && fallbackEvent != null) {
+      events = [fallbackEvent];
+    }
+
     final categories =
         (results[2] as List<TransactionCategory>?) ?? TransactionCategory.defaultCategories;
 
     _members = members;
-    _activeEvent = activeEvent;
+    _events = events;
     _allCategories = categories;
+
+    if (widget.initialEventId != null) {
+      _selectedEvent = events.cast<ConjoinedEventSummary?>().firstWhere(
+            (e) => e?.id == widget.initialEventId,
+            orElse: () => events.isNotEmpty ? events.first : null,
+          );
+    } else if (events.isNotEmpty && _selectedEvent == null) {
+      _selectedEvent = events.first;
+    }
 
     if (_selectedPayerId == null && members.isNotEmpty) {
       _selectedPayerId = members.first.id;
@@ -140,7 +179,7 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
 
     return _AddScreenDependencies(
       members: members,
-      activeEvent: activeEvent,
+      events: events,
       categories: categories,
     );
   }
@@ -270,6 +309,20 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
       return;
     }
 
+    if (widget.isEventExpenseOnly) {
+      if (_selectedEvent == null && widget.initialEventId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Please select or create an active event pool to log event expenses.'),
+            backgroundColor: AppColors.dangerCoral,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+        return;
+      }
+    }
+
     // Resolve transaction title
     String title = _titleController.text.trim();
     if (title.isEmpty) {
@@ -300,13 +353,13 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
               ? _selectedBeneficiaryMemberId
               : null;
 
+      final candidateEventId = _selectedEvent?.id ?? widget.initialEventId;
       final eventId = isExpense
-          ? (widget.initialEventId ??
-              (_isTaggedToEvent &&
-                      _activeEvent != null &&
-                      uuidRegex.hasMatch(_activeEvent!.id)
-                  ? _activeEvent!.id
-                  : null))
+          ? ((widget.isEventExpenseOnly || _isTaggedToEvent) &&
+                  candidateEventId != null &&
+                  uuidRegex.hasMatch(candidateEventId)
+              ? candidateEventId
+              : null)
           : null;
 
       await _transactionRepo.createTransaction(
@@ -326,8 +379,9 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
 
       if (!mounted) return;
 
-      final accentColor =
-          isExpense ? AppColors.primaryFixed : AppColors.tertiaryFixed;
+      final accentColor = widget.isEventExpenseOnly
+          ? AppColors.secondary
+          : (isExpense ? AppColors.primaryFixed : AppColors.tertiaryFixed);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -376,8 +430,9 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
     final topOffset = topPadding + 36.0;
 
     final isExpense = _selectedType == TransactionType.expense;
-    final accentColor =
-        isExpense ? AppColors.primaryFixed : AppColors.tertiaryFixed;
+    final accentColor = widget.isEventExpenseOnly
+        ? AppColors.secondary
+        : (isExpense ? AppColors.primaryFixed : AppColors.tertiaryFixed);
 
     return Padding(
       padding: EdgeInsets.only(top: topOffset),
@@ -434,7 +489,9 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            isExpense ? 'Add Expense' : 'Add Income',
+                            widget.isEventExpenseOnly
+                                ? 'Add Event Expense'
+                                : (isExpense ? 'Add Expense' : 'Add Income'),
                             style: AppTypography.headlineSm(
                               color: AppColors.textPrimary,
                               fontWeight: FontWeight.w700,
@@ -475,7 +532,7 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
                   final deps = snapshot.data ??
                       _AddScreenDependencies(
                         members: _members,
-                        activeEvent: _activeEvent,
+                        events: _events,
                         categories: _allCategories,
                       );
 
@@ -492,18 +549,19 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
                         padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
                         child: Column(
                           children: [
-                            // 1. Segmented Expense / Income Switch
-                            TransactionTypeSegmentedSwitch(
-                              selectedType: _selectedType,
-                              onTypeChanged: (type) {
-                                setState(() {
-                                  _selectedType = type;
-                                  _syncSelectedCategoryForCurrentType();
-                                });
-                              },
-                            ),
-
-                            const SizedBox(height: 14),
+                            // 1. Segmented Expense / Income Switch (Hidden for Event Expense)
+                            if (!widget.isEventExpenseOnly) ...[
+                              TransactionTypeSegmentedSwitch(
+                                selectedType: _selectedType,
+                                onTypeChanged: (type) {
+                                  setState(() {
+                                    _selectedType = type;
+                                    _syncSelectedCategoryForCurrentType();
+                                  });
+                                },
+                              ),
+                              const SizedBox(height: 14),
+                            ],
 
                             // 2. Transaction Value Display & Quick Presets
                             AmountKeypadDisplay(
@@ -593,14 +651,20 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
                               activeColor: accentColor,
                             ),
 
-                            // 6. Conjoined Event Tag Card (Shared Pot) - shown ONLY for Expense if active event exists
-                            if (isExpense && deps.activeEvent != null) ...[
+                            // 6. Conjoined Event Tag Card (Shared Pot)
+                            if (isExpense && (deps.events.isNotEmpty || widget.isEventExpenseOnly)) ...[
                               const SizedBox(height: 16),
                               ConjoinedEventTagCard(
-                                event: deps.activeEvent!,
-                                isTagged: _isTaggedToEvent,
-                                onToggle: (val) =>
-                                    setState(() => _isTaggedToEvent = val),
+                                events: deps.events,
+                                selectedEvent: _selectedEvent ?? deps.events.firstOrNull,
+                                isTagged: widget.isEventExpenseOnly ? true : _isTaggedToEvent,
+                                isMandatory: widget.isEventExpenseOnly,
+                                onToggle: widget.isEventExpenseOnly
+                                    ? null
+                                    : (val) =>
+                                        setState(() => _isTaggedToEvent = val),
+                                onEventSelected: (ev) =>
+                                    setState(() => _selectedEvent = ev),
                               ),
                             ],
 
@@ -647,9 +711,11 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
                                             Text(
-                                              isExpense
-                                                  ? 'Record Expense'
-                                                  : 'Record Income',
+                                              widget.isEventExpenseOnly
+                                                  ? 'Record Event Expense'
+                                                  : (isExpense
+                                                      ? 'Record Expense'
+                                                      : 'Record Income'),
                                               style: AppTypography.headlineSm(
                                                 color: AppColors.canvasBase,
                                                 fontWeight: FontWeight.w700,
@@ -709,15 +775,22 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
-                                        color: isExpense
-                                            ? AppColors.primaryFixed
+                                        color: widget.isEventExpenseOnly
+                                            ? AppColors.secondary
                                                 .withValues(alpha: 0.15)
-                                            : AppColors.tertiaryFixed
-                                                .withValues(alpha: 0.15),
+                                            : (isExpense
+                                                ? AppColors.primaryFixed
+                                                    .withValues(alpha: 0.15)
+                                                : AppColors.tertiaryFixed
+                                                    .withValues(alpha: 0.15)),
                                         borderRadius: BorderRadius.circular(6),
                                       ),
                                       child: Text(
-                                        isExpense ? 'EXPENSE' : 'INCOME',
+                                        widget.isEventExpenseOnly
+                                            ? 'EVENT EXPENSE'
+                                            : (isExpense
+                                                ? 'EXPENSE'
+                                                : 'INCOME'),
                                         style: AppTypography.labelSm(
                                           color: accentColor,
                                           fontWeight: FontWeight.w800,
@@ -770,12 +843,12 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
 
 class _AddScreenDependencies {
   final List<FamilyMember> members;
-  final ConjoinedEventSummary? activeEvent;
+  final List<ConjoinedEventSummary> events;
   final List<TransactionCategory> categories;
 
   _AddScreenDependencies({
     required this.members,
-    required this.activeEvent,
+    required this.events,
     required this.categories,
   });
 }

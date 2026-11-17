@@ -7,6 +7,7 @@ import 'package:finimo/screens/activity_screen.dart';
 import 'package:finimo/services/family_repository.dart';
 import 'package:finimo/services/home_repository.dart';
 import 'package:finimo/services/transaction_repository.dart';
+import 'package:finimo/widgets/activity_transaction_card.dart';
 
 class _FakeHomeRepo extends MockHomeRepository {}
 
@@ -413,6 +414,48 @@ void main() {
 
       expect(find.text('No Transactions Found'), findsOneWidget);
       expect(find.text('Log a Transaction'), findsOneWidget);
+    });
+
+    testWidgets(
+        'ActivityTransactionCard renders both Event badge and stacked avatars for Entire Family',
+        (tester) async {
+      final tx = LedgerTransaction(
+        id: 'tx_event_multi',
+        title: 'Dining',
+        categoryName: 'Dining',
+        amount: 2000.0,
+        isExpense: true,
+        timeString: '18:02',
+        dateSection: 'Today',
+        payerInitial: 'P',
+        payerName: 'Priya Mehta',
+        beneficiaryName: 'Entire Family',
+        badgeText: 'Event',
+        badgeColor: const Color(0xFFA855F7),
+        icon: Icons.restaurant_rounded,
+        isMultiBeneficiary: true,
+        transactionDate: DateTime.now(),
+        eventId: 'event_uuid_123',
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ActivityTransactionCard(
+              transaction: tx,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Both the 'Event' badge and stacked avatars 'A', 'P', 'AY' must be present!
+      expect(find.text('Event'), findsOneWidget);
+      expect(find.text('A'), findsOneWidget);
+      expect(find.text('P'), findsNWidgets(2)); // Payer badge + Stacked avatar
+      expect(find.text('AY'), findsOneWidget);
+      expect(find.text('Dining'), findsNWidgets(2)); // Title & Category
     });
   });
 }

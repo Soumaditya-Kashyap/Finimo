@@ -255,8 +255,10 @@ class _ConjoinedEventDetailScreenState
                             transactionRepository: _transactionRepo,
                             familyRepository: _familyRepo,
                             categoryRepository: _categoryRepo,
+                            eventRepository: _eventRepo,
                             initialType: TransactionType.expense,
                             initialEventId: widget.eventId,
+                            isEventExpenseOnly: true,
                           );
                           if (recorded == true) {
                             _loadDetail();

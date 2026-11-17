@@ -12,6 +12,7 @@ import 'package:finimo/models/transaction_category.dart';
 import 'package:finimo/models/transaction_item.dart';
 import 'package:finimo/services/category_repository.dart';
 import 'package:finimo/services/dashboard_repository.dart';
+import 'package:finimo/services/event_repository.dart';
 import 'package:finimo/services/family_repository.dart';
 import 'package:finimo/services/home_repository.dart';
 import 'package:finimo/services/transaction_repository.dart';
@@ -93,6 +94,15 @@ class _RecordingTransactionRepo implements TransactionRepository {
 class _StubDashboardRepo extends MockDashboardRepository {
   @override
   Future<ConjoinedEventSummary?> getActiveConjoinedEvent() async => null;
+}
+
+class _StubEventRepo extends MockEventRepository {
+  final List<Map<String, dynamic>> eventsList;
+  _StubEventRepo(this.eventsList);
+
+  @override
+  Future<List<Map<String, dynamic>>> getEvents({String? status}) async =>
+      eventsList;
 }
 
 class _StubFamilyRepo extends MockFamilyRepository {
@@ -441,6 +451,77 @@ void main() {
       expect(transactionRepo.lastCreated!['amount'], 50000.0);
       expect(transactionRepo.lastCreated!['title'], 'Salary');
       expect(transactionRepo.lastCreated!['category_id'], 'cat_salary_uuid');
+    });
+
+    testWidgets('AddExpenseIncomeScreen opens in event-only mode and tags event correctly',
+        (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final transactionRepo = _RecordingTransactionRepo();
+      final eventRepo = _StubEventRepo([
+        {
+          'id': 'b437f198-508b-4b2a-8924-a28d5462cf42',
+          'title': 'Durga Puja',
+          'budget_cap': 15000.0,
+          'total_spent': 3000.0,
+          'remaining_budget': 12000.0,
+          'percentage_used': 20.0,
+          'status': 'ACTIVE',
+        },
+      ]);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: AddExpenseIncomeScreen(
+              repository: _FakeHomeRepo(),
+              familyRepository: _StubFamilyRepo(testMembers),
+              categoryRepository: _StubCategoryRepo(testCategories),
+              dashboardRepository: _StubDashboardRepo(),
+              transactionRepository: transactionRepo,
+              eventRepository: eventRepo,
+              isEventExpenseOnly: true,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Header should say 'Add Event Expense'
+      expect(find.text('Add Event Expense'), findsOneWidget);
+
+      // Income toggle should NOT exist
+      expect(find.text('Income'), findsNothing);
+
+      // Mandatory event tag card should be visible
+      expect(find.text('Event Pool (Required)'), findsOneWidget);
+      expect(find.text('ISOLATED POOL'), findsOneWidget);
+      expect(find.text('Durga Puja'), findsOneWidget);
+
+      // Enter amount 2000
+      await tester.tap(find.text('2'));
+      await tester.pump();
+      await tester.tap(find.text('0'));
+      await tester.pump();
+      await tester.tap(find.text('0'));
+      await tester.pump();
+      await tester.tap(find.text('0'));
+      await tester.pump();
+
+      // Tap 'Record Event Expense'
+      await tester.tap(find.text('Record Event Expense'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(transactionRepo.lastCreated, isNotNull);
+      expect(transactionRepo.lastCreated!['type'], 'EXPENSE');
+      expect(transactionRepo.lastCreated!['amount'], 2000.0);
+      expect(transactionRepo.lastCreated!['event_id'],
+          'b437f198-508b-4b2a-8924-a28d5462cf42');
     });
   });
 }
