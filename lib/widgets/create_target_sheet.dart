@@ -4,17 +4,26 @@ import '../services/category_repository.dart';
 import '../services/target_repository.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
+import '../utils/currency_formatter.dart';
 
 class CreateTargetSheet extends StatefulWidget {
   final TargetRepository targetRepository;
   final CategoryRepository categoryRepository;
   final VoidCallback onTargetCreated;
+  final bool hasMasterBudget;
+  final String? masterBudgetId;
+  final double? masterBudgetAmount;
+  final double? allocatedCategoriesAmount;
 
   const CreateTargetSheet({
     super.key,
     required this.targetRepository,
     required this.categoryRepository,
     required this.onTargetCreated,
+    this.hasMasterBudget = false,
+    this.masterBudgetId,
+    this.masterBudgetAmount,
+    this.allocatedCategoriesAmount,
   });
 
   static Future<void> show(
@@ -22,6 +31,10 @@ class CreateTargetSheet extends StatefulWidget {
     required TargetRepository targetRepository,
     required CategoryRepository categoryRepository,
     required VoidCallback onTargetCreated,
+    bool hasMasterBudget = false,
+    String? masterBudgetId,
+    double? masterBudgetAmount,
+    double? allocatedCategoriesAmount,
   }) {
     return showModalBottomSheet(
       context: context,
@@ -31,6 +44,10 @@ class CreateTargetSheet extends StatefulWidget {
         targetRepository: targetRepository,
         categoryRepository: categoryRepository,
         onTargetCreated: onTargetCreated,
+        hasMasterBudget: hasMasterBudget,
+        masterBudgetId: masterBudgetId,
+        masterBudgetAmount: masterBudgetAmount,
+        allocatedCategoriesAmount: allocatedCategoriesAmount,
       ),
     );
   }
@@ -55,6 +72,10 @@ class _CreateTargetSheetState extends State<CreateTargetSheet> {
   @override
   void initState() {
     super.initState();
+    if (!widget.hasMasterBudget) {
+      _nameController.text = 'Master Monthly Budget';
+      _selectedCategoryId = null;
+    }
     _loadCategories();
   }
 
@@ -72,6 +93,10 @@ class _CreateTargetSheetState extends State<CreateTargetSheet> {
         setState(() {
           _categories = list;
           _isLoadingCategories = false;
+          if (widget.hasMasterBudget && _categories.isNotEmpty && _selectedCategoryId == null && _nameController.text.isEmpty) {
+            _selectedCategoryId = _categories.first.id;
+            _nameController.text = _categories.first.name;
+          }
         });
       }
     } catch (_) {
@@ -109,12 +134,32 @@ class _CreateTargetSheetState extends State<CreateTargetSheet> {
         notifyThresholdPct: _notifyThreshold,
       );
 
+      // If this was a category target and it caused total allocations to exceed Master Budget:
+      if (_selectedCategoryId != null &&
+          widget.hasMasterBudget &&
+          widget.masterBudgetId != null) {
+        final currentMaster = widget.masterBudgetAmount ?? 0.0;
+        final currentAllocated = widget.allocatedCategoriesAmount ?? 0.0;
+        final newTotalAllocated = currentAllocated + amount;
+        if (newTotalAllocated > currentMaster) {
+          await widget.targetRepository.updateTarget(
+            widget.masterBudgetId!,
+            limitAmount: newTotalAllocated,
+          );
+        }
+      }
+
       if (mounted) {
         Navigator.of(context).pop();
         widget.onTargetCreated();
+        final isMaster = _selectedCategoryId == null;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Target "$name" created successfully!'),
+            content: Text(
+              isMaster
+                  ? 'Master Monthly Budget set to ₹${CurrencyFormatter.formatInr(amount)}!'
+                  : 'Target "$name" created successfully!',
+            ),
             backgroundColor: AppColors.surface03,
           ),
         );
@@ -131,6 +176,12 @@ class _CreateTargetSheetState extends State<CreateTargetSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final unallocatedBuffer = widget.hasMasterBudget
+        ? ((widget.masterBudgetAmount ?? 0) -
+                (widget.allocatedCategoriesAmount ?? 0))
+            .clamp(0.0, double.infinity)
+        : 0.0;
+
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.viewInsetsOf(context).bottom,
@@ -166,7 +217,9 @@ class _CreateTargetSheetState extends State<CreateTargetSheet> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Set Spending Target',
+                    widget.hasMasterBudget
+                        ? 'Set Spending Target'
+                        : 'Set Master Monthly Budget',
                     style: AppTypography.headlineSm(
                       color: AppColors.textPrimary,
                       fontWeight: FontWeight.w700,
@@ -174,11 +227,65 @@ class _CreateTargetSheetState extends State<CreateTargetSheet> {
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close_rounded, color: AppColors.textMuted),
+                    icon: const Icon(Icons.close_rounded,
+                        color: AppColors.textMuted),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
+
+              if (!widget.hasMasterBudget)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 14),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryFixed.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.primaryFixed.withValues(alpha: 0.35),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.account_balance_wallet_outlined,
+                          color: AppColors.primaryFixed, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Step 1: Set your Family Master Monthly Budget. All family expenses will track against this cap.',
+                          style: AppTypography.bodySm(
+                            color: AppColors.textPrimary,
+                          ).copyWith(fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                Container(
+                  margin: const EdgeInsets.only(bottom: 14),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface01,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.ghostBorder),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Master: ₹${CurrencyFormatter.formatInr(widget.masterBudgetAmount ?? 0)}',
+                        style: AppTypography.bodySm(color: AppColors.textMuted),
+                      ),
+                      Text(
+                        'Available Cushion: ₹${CurrencyFormatter.formatInr(unallocatedBuffer)}',
+                        style: AppTypography.bodySm(color: AppColors.primaryFixed)
+                            .copyWith(fontWeight: FontWeight.w700),
+                      ),
+                    ],
+                  ),
+                ),
 
               if (_errorMessage != null) ...[
                 Container(
@@ -189,12 +296,14 @@ class _CreateTargetSheetState extends State<CreateTargetSheet> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.error_outline, color: AppColors.dangerCoral, size: 18),
+                      const Icon(Icons.error_outline,
+                          color: AppColors.dangerCoral, size: 18),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           _errorMessage!,
-                          style: const TextStyle(color: AppColors.dangerCoral, fontSize: 13),
+                          style: const TextStyle(
+                              color: AppColors.dangerCoral, fontSize: 13),
                         ),
                       ),
                     ],
@@ -204,7 +313,8 @@ class _CreateTargetSheetState extends State<CreateTargetSheet> {
               ],
 
               // Target Name Field
-              Text('TARGET NAME', style: AppTypography.labelSm(color: AppColors.textMuted)),
+              Text('TARGET NAME',
+                  style: AppTypography.labelSm(color: AppColors.textMuted)),
               const SizedBox(height: 6),
               Container(
                 decoration: BoxDecoration(
@@ -217,8 +327,9 @@ class _CreateTargetSheetState extends State<CreateTargetSheet> {
                   controller: _nameController,
                   style: const TextStyle(color: AppColors.textPrimary),
                   decoration: const InputDecoration(
-                    hintText: 'e.g. Groceries & Household, Dining Out',
-                    hintStyle: TextStyle(color: AppColors.textMuted, fontSize: 14),
+                    hintText: 'e.g. Master Monthly Budget, Groceries',
+                    hintStyle:
+                        TextStyle(color: AppColors.textMuted, fontSize: 14),
                     border: InputBorder.none,
                   ),
                 ),
@@ -226,7 +337,8 @@ class _CreateTargetSheetState extends State<CreateTargetSheet> {
               const SizedBox(height: 16),
 
               // Limit Amount
-              Text('LIMIT AMOUNT (₹)', style: AppTypography.labelSm(color: AppColors.textMuted)),
+              Text('LIMIT AMOUNT (₹)',
+                  style: AppTypography.labelSm(color: AppColors.textMuted)),
               const SizedBox(height: 6),
               Container(
                 decoration: BoxDecoration(
@@ -237,7 +349,8 @@ class _CreateTargetSheetState extends State<CreateTargetSheet> {
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 child: TextField(
                   controller: _amountController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
                   style: const TextStyle(
                     color: AppColors.primaryFixed,
                     fontSize: 20,
@@ -245,9 +358,11 @@ class _CreateTargetSheetState extends State<CreateTargetSheet> {
                   ),
                   decoration: const InputDecoration(
                     prefixText: '₹ ',
-                    prefixStyle: TextStyle(color: AppColors.primaryFixed, fontSize: 20),
-                    hintText: '15000',
-                    hintStyle: TextStyle(color: AppColors.textMuted, fontSize: 18),
+                    prefixStyle:
+                        TextStyle(color: AppColors.primaryFixed, fontSize: 20),
+                    hintText: '20000',
+                    hintStyle:
+                        TextStyle(color: AppColors.textMuted, fontSize: 18),
                     border: InputBorder.none,
                   ),
                 ),
@@ -255,10 +370,16 @@ class _CreateTargetSheetState extends State<CreateTargetSheet> {
               const SizedBox(height: 16),
 
               // Category Selector
-              Text('CATEGORY (OPTIONAL)', style: AppTypography.labelSm(color: AppColors.textMuted)),
+              Text(
+                widget.hasMasterBudget
+                    ? 'CATEGORY ALLOCATION'
+                    : 'CATEGORY (MANDATORY MASTER BUDGET)',
+                style: AppTypography.labelSm(color: AppColors.textMuted),
+              ),
               const SizedBox(height: 8),
               if (_isLoadingCategories)
-                const Center(child: CircularProgressIndicator(color: AppColors.primaryFixed))
+                const Center(
+                    child: CircularProgressIndicator(color: AppColors.primaryFixed))
               else
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
@@ -272,52 +393,69 @@ class _CreateTargetSheetState extends State<CreateTargetSheet> {
                           selectedColor: AppColors.primaryFixed,
                           backgroundColor: AppColors.surface01,
                           labelStyle: TextStyle(
-                            color: _selectedCategoryId == null ? AppColors.canvasBase : AppColors.textMuted,
+                            color: _selectedCategoryId == null
+                                ? AppColors.canvasBase
+                                : AppColors.textMuted,
                             fontWeight: FontWeight.w700,
                           ),
                           onSelected: (_) {
-                            setState(() => _selectedCategoryId = null);
+                            setState(() {
+                              _selectedCategoryId = null;
+                              if (!widget.hasMasterBudget ||
+                                  _nameController.text.isEmpty ||
+                                  _categories.any((c) =>
+                                      c.name == _nameController.text)) {
+                                _nameController.text = 'Master Monthly Budget';
+                              }
+                            });
                           },
                         ),
                       ),
-                      ..._categories.map((cat) {
-                        final isSel = _selectedCategoryId == cat.id;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: ChoiceChip(
-                            label: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(cat.icon, size: 14, color: isSel ? AppColors.canvasBase : cat.iconColor),
-                                const SizedBox(width: 4),
-                                Text(cat.name),
-                              ],
-                            ),
-                            selected: isSel,
-                            selectedColor: AppColors.primaryFixed,
-                            backgroundColor: AppColors.surface01,
-                            labelStyle: TextStyle(
-                              color: isSel ? AppColors.canvasBase : AppColors.textPrimary,
-                              fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
-                            ),
-                            onSelected: (_) {
-                              setState(() {
-                                _selectedCategoryId = cat.id;
-                                if (_nameController.text.trim().isEmpty) {
+                      if (widget.hasMasterBudget)
+                        ..._categories.map((cat) {
+                          final isSel = _selectedCategoryId == cat.id;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: ChoiceChip(
+                              label: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(cat.icon,
+                                      size: 14,
+                                      color: isSel
+                                          ? AppColors.canvasBase
+                                          : cat.iconColor),
+                                  const SizedBox(width: 4),
+                                  Text(cat.name),
+                                ],
+                              ),
+                              selected: isSel,
+                              selectedColor: AppColors.primaryFixed,
+                              backgroundColor: AppColors.surface01,
+                              labelStyle: TextStyle(
+                                color: isSel
+                                    ? AppColors.canvasBase
+                                    : AppColors.textPrimary,
+                                fontWeight:
+                                    isSel ? FontWeight.w700 : FontWeight.w500,
+                              ),
+                              onSelected: (_) {
+                                setState(() {
+                                  _selectedCategoryId = cat.id;
                                   _nameController.text = cat.name;
-                                }
-                              });
-                            },
-                          ),
-                        );
-                      }),
+                                });
+                              },
+                            ),
+                          );
+                        }),
                     ],
                   ),
                 ),
               const SizedBox(height: 16),
 
               // Time Frame (Monthly / Weekly)
-              Text('TIMEFRAME', style: AppTypography.labelSm(color: AppColors.textMuted)),
+              Text('TIMEFRAME',
+                  style: AppTypography.labelSm(color: AppColors.textMuted)),
               const SizedBox(height: 8),
               Row(
                 children: ['MONTHLY', 'WEEKLY', 'DAILY'].map((tf) {
@@ -330,7 +468,8 @@ class _CreateTargetSheetState extends State<CreateTargetSheet> {
                       selectedColor: AppColors.secondary,
                       backgroundColor: AppColors.surface01,
                       labelStyle: TextStyle(
-                        color: isSel ? AppColors.canvasBase : AppColors.textMuted,
+                        color:
+                            isSel ? AppColors.canvasBase : AppColors.textMuted,
                         fontWeight: FontWeight.w700,
                       ),
                       onSelected: (_) => setState(() => _timeFrame = tf),
@@ -344,8 +483,12 @@ class _CreateTargetSheetState extends State<CreateTargetSheet> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('NOTIFY THRESHOLD', style: AppTypography.labelSm(color: AppColors.textMuted)),
-                  Text('$_notifyThreshold%', style: const TextStyle(color: AppColors.dangerCoral, fontWeight: FontWeight.bold)),
+                  Text('NOTIFY THRESHOLD',
+                      style: AppTypography.labelSm(color: AppColors.textMuted)),
+                  Text('$_notifyThreshold%',
+                      style: const TextStyle(
+                          color: AppColors.dangerCoral,
+                          fontWeight: FontWeight.bold)),
                 ],
               ),
               Slider(
@@ -355,7 +498,8 @@ class _CreateTargetSheetState extends State<CreateTargetSheet> {
                 divisions: 10,
                 activeColor: AppColors.dangerCoral,
                 inactiveColor: AppColors.surface03,
-                onChanged: (val) => setState(() => _notifyThreshold = val.round()),
+                onChanged: (val) =>
+                    setState(() => _notifyThreshold = val.round()),
               ),
               const SizedBox(height: 20),
 
@@ -368,16 +512,20 @@ class _CreateTargetSheetState extends State<CreateTargetSheet> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryFixed,
                     foregroundColor: AppColors.canvasBase,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
                   ),
                   child: _isSubmitting
                       ? const SizedBox(
                           width: 24,
                           height: 24,
-                          child: CircularProgressIndicator(color: AppColors.canvasBase, strokeWidth: 2),
+                          child: CircularProgressIndicator(
+                              color: AppColors.canvasBase, strokeWidth: 2),
                         )
                       : Text(
-                          'Save Spending Limit',
+                          widget.hasMasterBudget
+                              ? 'Save Spending Limit'
+                              : 'Set Master Monthly Budget',
                           style: AppTypography.headlineSm(
                             color: AppColors.canvasBase,
                             fontWeight: FontWeight.w700,

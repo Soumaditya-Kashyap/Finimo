@@ -7,6 +7,7 @@ import '../services/dashboard_repository.dart';
 import '../services/event_repository.dart';
 import '../services/home_repository.dart';
 import '../services/target_repository.dart';
+import '../services/transaction_repository.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../utils/currency_formatter.dart';
@@ -25,6 +26,7 @@ class TargetsScreen extends StatefulWidget {
   final EventRepository? eventRepository;
   final CategoryRepository? categoryRepository;
   final DashboardRepository? dashboardRepository;
+  final TransactionRepository? transactionRepository;
   final VoidCallback? onSeeLedgerTap;
   final bool isActive;
 
@@ -35,6 +37,7 @@ class TargetsScreen extends StatefulWidget {
     this.eventRepository,
     this.categoryRepository,
     this.dashboardRepository,
+    this.transactionRepository,
     this.onSeeLedgerTap,
     this.isActive = true,
   });
@@ -48,6 +51,7 @@ class _TargetsScreenState extends State<TargetsScreen> {
   late final EventRepository _eventRepo;
   late final CategoryRepository _categoryRepo;
   late final DashboardRepository _dashboardRepo;
+  late final TransactionRepository _transactionRepo;
 
   int _selectedMonth = DateTime.now().month;
   int _selectedYear = DateTime.now().year;
@@ -62,8 +66,9 @@ class _TargetsScreenState extends State<TargetsScreen> {
     budgetRemainingAmount: 0,
     safeCapAmount: 0,
     daysLeft: 18,
-    pacingProgress: 0.5,
+    pacingProgress: 0.0,
     runwayProgress: 0.0,
+    hasMasterBudget: false,
   );
 
   @override
@@ -73,6 +78,8 @@ class _TargetsScreenState extends State<TargetsScreen> {
     _eventRepo = widget.eventRepository ?? HttpEventRepository();
     _categoryRepo = widget.categoryRepository ?? HttpCategoryRepository();
     _dashboardRepo = widget.dashboardRepository ?? HttpDashboardRepository();
+    _transactionRepo =
+        widget.transactionRepository ?? HttpTransactionRepository();
     _loadData();
   }
 
@@ -90,25 +97,92 @@ class _TargetsScreenState extends State<TargetsScreen> {
           month: _selectedMonth,
           year: _selectedYear,
         ),
+        _transactionRepo
+            .getTransactionsCursor(
+              month: _selectedMonth,
+              year: _selectedYear,
+              limit: 100,
+            )
+            .catchError((_) => <String, dynamic>{'items': []}),
       ]);
 
       final rawTargets = results[0] as List<Map<String, dynamic>>;
       final rawEvents = results[1] as List<Map<String, dynamic>>;
-      final metrics = results[2];
+      final txData = results[3] as Map<String, dynamic>;
+      final rawTxList = (txData['items'] as List?)
+              ?.whereType<Map<String, dynamic>>()
+              .toList() ??
+          [];
 
-      final limits = rawTargets
-          .map((json) => MonthlyLimitItem.fromApiResponse(json))
-          .toList();
+      // 1. Separate regular non-event expenses from event expenses!
+      // A transaction is a regular monthly living expense if:
+      // (a) type == 'EXPENSE'
+      // (b) event_id == null or empty
+      double regularMonthlySpent = 0.0;
+      final Map<String, double> categoryRegularSpentMap = {};
+
+      for (final tx in rawTxList) {
+        final typeStr = tx['type']?.toString().toUpperCase() ?? 'EXPENSE';
+        final isExpense = typeStr != 'INCOME';
+        final eventId = tx['event_id']?.toString();
+        final isEventTx =
+            eventId != null && eventId.isNotEmpty && eventId != 'null';
+
+        if (isExpense && !isEventTx) {
+          final amt = double.tryParse(tx['amount']?.toString() ?? '0') ?? 0.0;
+          regularMonthlySpent += amt;
+
+          final cat = tx['category'] as Map<String, dynamic>?;
+          final catId =
+              cat?['id']?.toString() ?? tx['category_id']?.toString();
+          if (catId != null && catId.isNotEmpty) {
+            categoryRegularSpentMap[catId] =
+                (categoryRegularSpentMap[catId] ?? 0.0) + amt;
+          }
+        }
+      }
+
+      // 2. Map targets with isolated regular spend (event spend never inflates monthly limits)
+      final limits = rawTargets.map((json) {
+        final item = MonthlyLimitItem.fromApiResponse(json);
+        if (item.isMaster) {
+          final pct = item.limitCap > 0
+              ? (regularMonthlySpent / item.limitCap * 100)
+              : 0.0;
+          final buf = item.limitCap - regularMonthlySpent;
+          return item.copyWith(
+            currentSpent: regularMonthlySpent,
+            percentageUsed: pct,
+            statusText: buf > 0
+                ? '₹${CurrencyFormatter.formatInr(buf)} buffer'
+                : (buf == 0
+                    ? 'Limit reached'
+                    : '₹${CurrencyFormatter.formatInr(buf.abs())} exceeded'),
+          );
+        } else if (item.categoryId != null) {
+          final sp = categoryRegularSpentMap[item.categoryId!] ?? 0.0;
+          final pct = item.limitCap > 0 ? (sp / item.limitCap * 100) : 0.0;
+          final buf = item.limitCap - sp;
+          return item.copyWith(
+            currentSpent: sp,
+            percentageUsed: pct,
+            statusText: buf > 0
+                ? '₹${CurrencyFormatter.formatInr(buf)} buffer'
+                : (buf == 0
+                    ? 'Limit reached'
+                    : '₹${CurrencyFormatter.formatInr(buf.abs())} exceeded'),
+          );
+        }
+        return item;
+      }).toList();
 
       final sinkingFunds = rawEvents
           .map((json) => SinkingFundGoal.fromApiResponse(json))
           .toList();
 
-      final dynamicSpent = (metrics as dynamic).monthlySpent as double? ?? 0.0;
-
       final gaugeData = TargetsDashboardData.compute(
         limits: limits,
-        monthlySpent: dynamicSpent,
+        regularMonthlySpent: regularMonthlySpent,
       );
 
       if (mounted) {
@@ -254,6 +328,12 @@ class _TargetsScreenState extends State<TargetsScreen> {
   }
 
   void _showCreateOptions(BuildContext context) {
+    final masterTarget = _limits.where((l) => l.isMaster).firstOrNull;
+    final hasMaster = masterTarget != null;
+    final allocatedAmount = _limits
+        .where((l) => !l.isMaster)
+        .fold(0.0, (sum, l) => sum + l.limitCap);
+
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.canvasBase,
@@ -297,6 +377,10 @@ class _TargetsScreenState extends State<TargetsScreen> {
                       targetRepository: _targetRepo,
                       categoryRepository: _categoryRepo,
                       onTargetCreated: _loadData,
+                      hasMasterBudget: hasMaster,
+                      masterBudgetId: masterTarget?.id,
+                      masterBudgetAmount: masterTarget?.limitCap,
+                      allocatedCategoriesAmount: allocatedAmount,
                     );
                   },
                   borderRadius: BorderRadius.circular(16),
@@ -305,7 +389,11 @@ class _TargetsScreenState extends State<TargetsScreen> {
                     decoration: BoxDecoration(
                       color: AppColors.surface01,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.ghostBorder),
+                      border: Border.all(
+                        color: hasMaster
+                            ? AppColors.ghostBorder
+                            : AppColors.primaryFixed.withValues(alpha: 0.5),
+                      ),
                     ),
                     child: Row(
                       children: [
@@ -315,8 +403,13 @@ class _TargetsScreenState extends State<TargetsScreen> {
                             color: AppColors.primaryFixed.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(Icons.roofing_outlined,
-                              color: AppColors.primaryFixed, size: 24),
+                          child: Icon(
+                            hasMaster
+                                ? Icons.pie_chart_outline_rounded
+                                : Icons.account_balance_wallet_outlined,
+                            color: AppColors.primaryFixed,
+                            size: 24,
+                          ),
                         ),
                         const SizedBox(width: 14),
                         Expanded(
@@ -324,7 +417,9 @@ class _TargetsScreenState extends State<TargetsScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Category Spending Limit',
+                                hasMaster
+                                    ? 'Category Spending Limit'
+                                    : 'Set Master Monthly Budget',
                                 style: AppTypography.labelMd(
                                   color: AppColors.textPrimary,
                                   fontWeight: FontWeight.w700,
@@ -332,7 +427,9 @@ class _TargetsScreenState extends State<TargetsScreen> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                'Set a monthly cap for Groceries, Dining, Fuel, etc.',
+                                hasMaster
+                                    ? 'Allocate sub-limits for Groceries, Dining, etc.'
+                                    : 'Mandatory: Set overall family monthly cap (e.g. ₹20,000)',
                                 style: AppTypography.bodySm(color: AppColors.textMuted),
                               ),
                             ],
@@ -458,7 +555,9 @@ class _TargetsScreenState extends State<TargetsScreen> {
                             ),
                           ),
                           Text(
-                            'Timeframe: ${limit.timeFrame ?? "MONTHLY"}',
+                            limit.isMaster
+                                ? 'Master Overall Family Cap'
+                                : 'Category: ${limit.title} • ${limit.timeFrame ?? "MONTHLY"}',
                             style: AppTypography.bodySm(color: AppColors.textMuted),
                           ),
                         ],
@@ -482,11 +581,16 @@ class _TargetsScreenState extends State<TargetsScreen> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('CURRENT SPENT', style: AppTypography.labelSm(color: AppColors.textMuted)),
+                          Text('CURRENT SPENT',
+                              style: AppTypography.labelSm(
+                                  color: AppColors.textMuted)),
                           const SizedBox(height: 2),
-                          Text('₹${CurrencyFormatter.formatInr(limit.currentSpent)}',
+                          Text(
+                              '₹${CurrencyFormatter.formatInr(limit.currentSpent)}',
                               style: TextStyle(
-                                  color: limit.isWarning ? AppColors.dangerCoral : AppColors.textPrimary,
+                                  color: limit.isWarning
+                                      ? AppColors.dangerCoral
+                                      : AppColors.textPrimary,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16)),
                         ],
@@ -494,9 +598,12 @@ class _TargetsScreenState extends State<TargetsScreen> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Text('MONTHLY CAP', style: AppTypography.labelSm(color: AppColors.textMuted)),
+                          Text('MONTHLY CAP',
+                              style: AppTypography.labelSm(
+                                  color: AppColors.textMuted)),
                           const SizedBox(height: 2),
-                          Text('₹${CurrencyFormatter.formatInr(limit.limitCap)}',
+                          Text(
+                              '₹${CurrencyFormatter.formatInr(limit.limitCap)}',
                               style: const TextStyle(
                                   color: AppColors.primaryFixed,
                                   fontWeight: FontWeight.bold,
@@ -522,8 +629,10 @@ class _TargetsScreenState extends State<TargetsScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(limit.statusText, style: AppTypography.bodySm(color: limit.accentColor)),
-                    Text('${limit.percentageUsed.toStringAsFixed(1)}% consumed',
+                    Text(limit.statusText,
+                        style: AppTypography.bodySm(color: limit.accentColor)),
+                    Text(
+                        '${limit.percentageUsed.toStringAsFixed(1)}% consumed',
                         style: AppTypography.bodySm(color: AppColors.textMuted)),
                   ],
                 ),
@@ -538,12 +647,20 @@ class _TargetsScreenState extends State<TargetsScreen> {
                       Navigator.of(ctx).pop();
                       _confirmDeleteTarget(limit);
                     },
-                    icon: const Icon(Icons.delete_outline, color: AppColors.dangerCoral),
-                    label: const Text('Delete Spending Limit',
-                        style: TextStyle(color: AppColors.dangerCoral, fontWeight: FontWeight.bold)),
+                    icon: const Icon(Icons.delete_outline,
+                        color: AppColors.dangerCoral),
+                    label: Text(
+                        limit.isMaster
+                            ? 'Delete Master Monthly Budget'
+                            : 'Delete Spending Limit',
+                        style: const TextStyle(
+                            color: AppColors.dangerCoral,
+                            fontWeight: FontWeight.bold)),
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: AppColors.dangerCoral.withValues(alpha: 0.5)),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      side: BorderSide(
+                          color: AppColors.dangerCoral.withValues(alpha: 0.5)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
                 ),
@@ -561,18 +678,24 @@ class _TargetsScreenState extends State<TargetsScreen> {
       builder: (c) => AlertDialog(
         backgroundColor: AppColors.surface02,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Delete Target?', style: TextStyle(color: AppColors.textPrimary)),
+        title: Text(
+            limit.isMaster ? 'Delete Master Budget?' : 'Delete Target?',
+            style: const TextStyle(color: AppColors.textPrimary)),
         content: Text(
-          'Are you sure you want to delete the spending limit for "${limit.title}"?',
+          limit.isMaster
+              ? 'Are you sure you want to delete the Master Monthly Budget? Sub-category limits will also lose their master ceiling.'
+              : 'Are you sure you want to delete the spending limit for "${limit.title}"?',
           style: const TextStyle(color: AppColors.textMuted),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(c).pop(false),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textMuted)),
+            child: const Text('Cancel',
+                style: TextStyle(color: AppColors.textMuted)),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.dangerCoral),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.dangerCoral),
             onPressed: () => Navigator.of(c).pop(true),
             child: const Text('Delete'),
           ),
@@ -587,7 +710,9 @@ class _TargetsScreenState extends State<TargetsScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Target "${limit.title}" removed'),
+              content: Text(limit.isMaster
+                  ? 'Master Monthly Budget removed'
+                  : 'Target "${limit.title}" removed'),
               backgroundColor: AppColors.surface03,
             ),
           );
@@ -607,13 +732,17 @@ class _TargetsScreenState extends State<TargetsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final masterTarget = _limits.where((l) => l.isMaster).firstOrNull;
+    final categoryLimits = _limits.where((l) => !l.isMaster).toList();
+
     return Scaffold(
       backgroundColor: AppColors.canvasBase,
       appBar: FinimoAppBar(
         onProfileTap: () {
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (ctx) => UserProfileScreen(repository: widget.repository),
+              builder: (ctx) =>
+                  UserProfileScreen(repository: widget.repository),
             ),
           );
         },
@@ -659,11 +788,13 @@ class _TargetsScreenState extends State<TargetsScreen> {
                     onTap: () => _showMonthPicker(context),
                     borderRadius: BorderRadius.circular(9999),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 8),
                       decoration: BoxDecoration(
                         color: AppColors.surface02,
                         borderRadius: BorderRadius.circular(9999),
-                        border: Border.all(color: AppColors.ghostBorder, width: 1),
+                        border:
+                            Border.all(color: AppColors.ghostBorder, width: 1),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -694,7 +825,8 @@ class _TargetsScreenState extends State<TargetsScreen> {
                 const Center(
                   child: Padding(
                     padding: EdgeInsets.symmetric(vertical: 40),
-                    child: CircularProgressIndicator(color: AppColors.primaryFixed),
+                    child: CircularProgressIndicator(
+                        color: AppColors.primaryFixed),
                   ),
                 )
               else if (_errorMessage != null)
@@ -703,39 +835,209 @@ class _TargetsScreenState extends State<TargetsScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 40),
                     child: Column(
                       children: [
-                        const Icon(Icons.error_outline, color: AppColors.dangerCoral, size: 36),
+                        const Icon(Icons.error_outline,
+                            color: AppColors.dangerCoral, size: 36),
                         const SizedBox(height: 10),
                         Text('Error loading targets:\n$_errorMessage',
                             textAlign: TextAlign.center,
-                            style: const TextStyle(color: AppColors.dangerCoral)),
+                            style:
+                                const TextStyle(color: AppColors.dangerCoral)),
                         const SizedBox(height: 14),
-                        ElevatedButton(onPressed: _loadData, child: const Text('Retry')),
+                        ElevatedButton(
+                            onPressed: _loadData, child: const Text('Retry')),
                       ],
                     ),
                   ),
                 )
               else ...[
-                // 2. Animated Dual Concentric Circle Gauge
+                // 2. Animated Dual Concentric Circle Gauge (Master Monthly Budget)
                 AnimatedConcentricBudgetGauge(
                   data: _gaugeData,
                   isActive: widget.isActive,
                 ),
 
-                const SizedBox(height: 26),
+                const SizedBox(height: 24),
 
-                // 3. Active Monthly Limits Section
+                // 2B. Master Monthly Budget Banner (or Callout if absent)
+                if (masterTarget == null)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(18),
+                    margin: const EdgeInsets.only(bottom: 24),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface01,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: AppColors.primaryFixed.withValues(alpha: 0.35),
+                        width: 1.2,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryFixed
+                                    .withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.account_balance_wallet_outlined,
+                                color: AppColors.primaryFixed,
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Set Master Monthly Budget',
+                                    style: AppTypography.headlineSm(
+                                      color: AppColors.textPrimary,
+                                      fontWeight: FontWeight.w700,
+                                    ).copyWith(fontSize: 16),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Mandatory first step to activate budget pacing and category allocations.',
+                                    style: AppTypography.bodySm(
+                                        color: AppColors.textMuted),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 44,
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              CreateTargetSheet.show(
+                                context,
+                                targetRepository: _targetRepo,
+                                categoryRepository: _categoryRepo,
+                                onTargetCreated: _loadData,
+                                hasMasterBudget: false,
+                              );
+                            },
+                            icon: const Icon(Icons.add,
+                                size: 18, color: AppColors.canvasBase),
+                            label: const Text(
+                              'Set Master Monthly Budget',
+                              style: TextStyle(
+                                  color: AppColors.canvasBase,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryFixed,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  GestureDetector(
+                    onTap: () => _showLimitDetail(masterTarget),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 14),
+                      margin: const EdgeInsets.only(bottom: 20),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface01,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: AppColors.primaryFixed.withValues(alpha: 0.25),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryFixed
+                                      .withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(Icons.shield_outlined,
+                                    color: AppColors.primaryFixed, size: 20),
+                              ),
+                              const SizedBox(width: 12),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    masterTarget.title,
+                                    style: AppTypography.labelMd(
+                                      color: AppColors.textPrimary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Allocated: ₹${CurrencyFormatter.formatInr(_gaugeData.allocatedCategoryAmount)} • Cushion: ₹${CurrencyFormatter.formatInr(_gaugeData.unallocatedBuffer)}',
+                                    style: AppTypography.bodySm(
+                                            color: AppColors.textMuted)
+                                        .copyWith(fontSize: 11),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: AppColors.surface02,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  '₹${CurrencyFormatter.formatInr(masterTarget.limitCap)}',
+                                  style: AppTypography.labelSm(
+                                    color: AppColors.primaryFixed,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                const Icon(Icons.tune_rounded,
+                                    size: 13, color: AppColors.primaryFixed),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                // 3. Active Category Sub-Limits Section
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Active Monthly Limits',
+                      'Category Allocations',
                       style: AppTypography.headlineSm(
                         color: AppColors.textPrimary,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     Text(
-                      '${_limits.length} CATEGORIES',
+                      '${categoryLimits.length} CATEGORIES',
                       style: AppTypography.labelSm(
                         color: AppColors.textMuted,
                         fontWeight: FontWeight.w600,
@@ -746,7 +1048,7 @@ class _TargetsScreenState extends State<TargetsScreen> {
 
                 const SizedBox(height: 12),
 
-                if (_limits.isEmpty)
+                if (categoryLimits.isEmpty)
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
@@ -757,10 +1059,13 @@ class _TargetsScreenState extends State<TargetsScreen> {
                     ),
                     child: Column(
                       children: [
-                        const Icon(Icons.tune_rounded, color: AppColors.textMuted, size: 32),
+                        const Icon(Icons.pie_chart_outline_rounded,
+                            color: AppColors.textMuted, size: 32),
                         const SizedBox(height: 10),
                         Text(
-                          'No active spending limits',
+                          masterTarget == null
+                              ? 'Set Master Monthly Budget first'
+                              : 'No category limits allocated yet',
                           style: AppTypography.headlineSm(
                             color: AppColors.textPrimary,
                             fontWeight: FontWeight.w600,
@@ -768,9 +1073,12 @@ class _TargetsScreenState extends State<TargetsScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Set category limits to track safe burn rate and pace.',
+                          masterTarget == null
+                              ? 'Define your overall monthly cap before creating category sub-limits.'
+                              : 'Allocate sub-limits for Groceries, Dining, etc. from your Master Budget cushion.',
                           textAlign: TextAlign.center,
-                          style: AppTypography.bodySm(color: AppColors.textMuted),
+                          style:
+                              AppTypography.bodySm(color: AppColors.textMuted),
                         ),
                         const SizedBox(height: 14),
                         OutlinedButton.icon(
@@ -780,14 +1088,27 @@ class _TargetsScreenState extends State<TargetsScreen> {
                               targetRepository: _targetRepo,
                               categoryRepository: _categoryRepo,
                               onTargetCreated: _loadData,
+                              hasMasterBudget: masterTarget != null,
+                              masterBudgetId: masterTarget?.id,
+                              masterBudgetAmount: masterTarget?.limitCap,
+                              allocatedCategoriesAmount:
+                                  _gaugeData.allocatedCategoryAmount,
                             );
                           },
-                          icon: const Icon(Icons.add, size: 16, color: AppColors.primaryFixed),
-                          label: const Text('Set Spending Limit',
-                              style: TextStyle(color: AppColors.primaryFixed, fontWeight: FontWeight.bold)),
+                          icon: const Icon(Icons.add,
+                              size: 16, color: AppColors.primaryFixed),
+                          label: Text(
+                              masterTarget == null
+                                  ? 'Set Master Monthly Budget'
+                                  : 'Allocate Category Limit',
+                              style: const TextStyle(
+                                  color: AppColors.primaryFixed,
+                                  fontWeight: FontWeight.bold)),
                           style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: AppColors.primaryFixed),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            side:
+                                const BorderSide(color: AppColors.primaryFixed),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10)),
                           ),
                         ),
                       ],
@@ -797,10 +1118,10 @@ class _TargetsScreenState extends State<TargetsScreen> {
                   ListView.separated(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _limits.length,
+                    itemCount: categoryLimits.length,
                     separatorBuilder: (_, index) => const SizedBox(height: 10),
                     itemBuilder: (context, index) {
-                      final item = _limits[index];
+                      final item = categoryLimits[index];
                       return GestureDetector(
                         onTap: () => _showLimitDetail(item),
                         child: MonthlyLimitCard(item: item),

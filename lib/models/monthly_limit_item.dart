@@ -77,7 +77,8 @@ class MonthlyLimitItem {
     }
 
     final category = json['category'] as Map<String, dynamic>? ?? {};
-    final categoryId = json['category_id']?.toString();
+    final categoryId =
+        json['category_id']?.toString() ?? category['id']?.toString();
     final iconKey = category['icon_key']?.toString();
     final colorHex = category['color_hex']?.toString();
 
@@ -126,6 +127,40 @@ class MonthlyLimitItem {
       categoryId: json['category_id'] as String?,
       timeFrame: json['time_frame'] as String?,
       notifyThresholdPct: json['notify_threshold_pct'] as int?,
+    );
+  }
+
+  bool get isMaster => categoryId == null || categoryId!.isEmpty;
+
+  MonthlyLimitItem copyWith({
+    String? id,
+    String? title,
+    double? limitCap,
+    double? currentSpent,
+    double? percentageUsed,
+    String? statusText,
+    String? footerStatus,
+    Color? accentColor,
+    IconData? icon,
+    bool? isWarning,
+    String? categoryId,
+    String? timeFrame,
+    int? notifyThresholdPct,
+  }) {
+    return MonthlyLimitItem(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      limitCap: limitCap ?? this.limitCap,
+      currentSpent: currentSpent ?? this.currentSpent,
+      percentageUsed: percentageUsed ?? this.percentageUsed,
+      statusText: statusText ?? this.statusText,
+      footerStatus: footerStatus ?? this.footerStatus,
+      accentColor: accentColor ?? this.accentColor,
+      icon: icon ?? this.icon,
+      isWarning: isWarning ?? this.isWarning,
+      categoryId: categoryId ?? this.categoryId,
+      timeFrame: timeFrame ?? this.timeFrame,
+      notifyThresholdPct: notifyThresholdPct ?? this.notifyThresholdPct,
     );
   }
 

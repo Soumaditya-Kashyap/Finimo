@@ -118,14 +118,17 @@ class _AnimatedConcentricBudgetGaugeState
               // Top Status Pill: Dynamic Pacing / No Budget Status
               Builder(
                 builder: (context) {
-                  final hasBudget = widget.data.safeCapAmount > 0;
+                  final hasBudget =
+                      widget.data.hasMasterBudget && widget.data.safeCapAmount > 0;
                   final (statusText, statusColor) = !hasBudget
-                      ? ('NO BUDGET SET (${widget.data.daysLeft} DAYS LEFT)', AppColors.textMuted)
+                      ? ('NO MASTER BUDGET SET (${widget.data.daysLeft} DAYS LEFT)',
+                          AppColors.textMuted)
                       : widget.data.budgetRemainingPct <= 0
                           ? ('BUDGET EXCEEDED', AppColors.dangerCoral)
                           : widget.data.budgetRemainingPct <= 20
                               ? ('CAUTION (LOW BUFFER)', const Color(0xFFFF9500))
-                              : ('ON TRACK (${widget.data.daysLeft} DAYS LEFT)', AppColors.primaryFixed);
+                              : ('ON TRACK (${widget.data.daysLeft} DAYS LEFT)',
+                                  AppColors.primaryFixed);
 
                   return Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
@@ -178,7 +181,8 @@ class _AnimatedConcentricBudgetGaugeState
                   animation: _curveAnimation,
                   builder: (context, child) {
                     final progress = _curveAnimation.value;
-                    final hasBudget = widget.data.safeCapAmount > 0;
+                    final hasBudget =
+                        widget.data.hasMasterBudget && widget.data.safeCapAmount > 0;
 
                     return CustomPaint(
                       painter: _ConcentricGaugePainter(
@@ -202,7 +206,7 @@ class _AnimatedConcentricBudgetGaugeState
                               ),
                             ),
                             Text(
-                              hasBudget ? 'BUDGET REMAINING' : 'NO BUDGET SET',
+                              hasBudget ? 'BUDGET REMAINING' : 'NO MASTER BUDGET',
                               style: AppTypography.labelSm(
                                 color: AppColors.textMuted,
                                 fontWeight: FontWeight.w700,
@@ -215,7 +219,7 @@ class _AnimatedConcentricBudgetGaugeState
                             Text(
                               hasBudget
                                   ? '${CurrencyFormatter.formatInr(widget.data.budgetRemainingAmount)} left'
-                                  : 'Set monthly limit below',
+                                  : 'Tap + to set monthly cap',
                               style: AppTypography.labelMd(
                                 color: hasBudget
                                     ? AppColors.primaryFixed

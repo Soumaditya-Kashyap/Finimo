@@ -5,6 +5,9 @@ class TargetsDashboardData {
   final int daysLeft; // 18
   final double pacingProgress; // 0.82
   final double runwayProgress; // 0.74
+  final bool hasMasterBudget;
+  final double allocatedCategoryAmount;
+  final double unallocatedBuffer;
 
   const TargetsDashboardData({
     required this.budgetRemainingPct,
@@ -13,60 +16,75 @@ class TargetsDashboardData {
     required this.daysLeft,
     required this.pacingProgress,
     required this.runwayProgress,
+    this.hasMasterBudget = false,
+    this.allocatedCategoryAmount = 0.0,
+    this.unallocatedBuffer = 0.0,
   });
 
   factory TargetsDashboardData.compute({
     required List<dynamic> limits,
-    required double monthlySpent,
-    double? overallBudgetCap,
+    required double regularMonthlySpent,
+    double? masterBudgetCap,
   }) {
-    double totalCap = overallBudgetCap ?? 0.0;
-    double categorySpent = 0.0;
+    double totalCap = masterBudgetCap ?? 0.0;
+    double allocatedCategories = 0.0;
+    bool foundMasterInLimits = masterBudgetCap != null && masterBudgetCap > 0;
 
     for (final item in limits) {
+      final bool isMaster;
+      final double cap;
+
       if (item is Map<String, dynamic>) {
-        final cap = double.tryParse(item['limit_amount']?.toString() ??
+        final catId = item['category_id']?.toString();
+        isMaster = catId == null || catId.isEmpty;
+        cap = double.tryParse(item['limit_amount']?.toString() ??
                 item['limit_cap']?.toString() ??
                 '0') ??
             0.0;
-        final sp = double.tryParse(item['current_period_spent']?.toString() ??
-                item['current_spent']?.toString() ??
-                '0') ??
-            0.0;
-        if (overallBudgetCap == null || overallBudgetCap == 0) {
-          totalCap += cap;
-        }
-        categorySpent += sp;
       } else {
-        // If it's MonthlyLimitItem
-        try {
-          final cap = (item as dynamic).limitCap as double? ?? 0.0;
-          final sp = (item as dynamic).currentSpent as double? ?? 0.0;
-          if (overallBudgetCap == null || overallBudgetCap == 0) {
-            totalCap += cap;
-          }
-          categorySpent += sp;
-        } catch (_) {}
+        // MonthlyLimitItem
+        isMaster = (item as dynamic).isMaster as bool? ?? false;
+        cap = (item as dynamic).limitCap as double? ?? 0.0;
+      }
+
+      if (isMaster) {
+        totalCap = cap;
+        foundMasterInLimits = true;
+      } else {
+        allocatedCategories += cap;
       }
     }
 
-    final double effectiveSpent = monthlySpent > 0 ? monthlySpent : categorySpent;
-    final double remaining = totalCap > effectiveSpent ? (totalCap - effectiveSpent) : 0.0;
-    final double remainingPct = totalCap > 0 ? (remaining / totalCap * 100) : 0.0;
+    final hasMaster = foundMasterInLimits && totalCap > 0;
+    final effectiveCap = hasMaster ? totalCap : 0.0;
+    final unallocated = hasMaster
+        ? (totalCap - allocatedCategories).clamp(0.0, double.infinity)
+        : 0.0;
+
+    final double effectiveSpent = regularMonthlySpent;
+    final double remaining =
+        effectiveCap > effectiveSpent ? (effectiveCap - effectiveSpent) : 0.0;
+    final double remainingPct =
+        effectiveCap > 0 ? (remaining / effectiveCap * 100) : 0.0;
 
     final now = DateTime.now();
     final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
     final daysLeft = (daysInMonth - now.day).clamp(0, 31);
-    final pacingProgress = totalCap > 0 ? (now.day / daysInMonth).clamp(0.0, 1.0) : 0.0;
-    final runwayProgress = totalCap > 0 ? (effectiveSpent / totalCap).clamp(0.0, 1.0) : 0.0;
+    final pacingProgress =
+        effectiveCap > 0 ? (now.day / daysInMonth).clamp(0.0, 1.0) : 0.0;
+    final runwayProgress =
+        effectiveCap > 0 ? (effectiveSpent / effectiveCap).clamp(0.0, 1.0) : 0.0;
 
     return TargetsDashboardData(
       budgetRemainingPct: remainingPct,
       budgetRemainingAmount: remaining,
-      safeCapAmount: totalCap,
+      safeCapAmount: effectiveCap,
       daysLeft: daysLeft,
       pacingProgress: pacingProgress,
       runwayProgress: runwayProgress,
+      hasMasterBudget: hasMaster,
+      allocatedCategoryAmount: allocatedCategories,
+      unallocatedBuffer: unallocated,
     );
   }
 
@@ -78,6 +96,11 @@ class TargetsDashboardData {
       daysLeft: json['days_left'] as int? ?? 18,
       pacingProgress: (json['pacing_progress'] as num?)?.toDouble() ?? 0.82,
       runwayProgress: (json['runway_progress'] as num?)?.toDouble() ?? 0.74,
+      hasMasterBudget: json['has_master_budget'] as bool? ?? false,
+      allocatedCategoryAmount:
+          (json['allocated_category_amount'] as num?)?.toDouble() ?? 0.0,
+      unallocatedBuffer:
+          (json['unallocated_buffer'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
@@ -88,5 +111,8 @@ class TargetsDashboardData {
         'days_left': daysLeft,
         'pacing_progress': pacingProgress,
         'runway_progress': runwayProgress,
+        'has_master_budget': hasMasterBudget,
+        'allocated_category_amount': allocatedCategoryAmount,
+        'unallocated_buffer': unallocatedBuffer,
       };
 }

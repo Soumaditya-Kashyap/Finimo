@@ -12,6 +12,7 @@ import 'package:finimo/services/dashboard_repository.dart';
 import 'package:finimo/services/event_repository.dart';
 import 'package:finimo/services/home_repository.dart';
 import 'package:finimo/services/target_repository.dart';
+import 'package:finimo/services/transaction_repository.dart';
 
 class _FakeHomeRepo extends MockHomeRepository {}
 
@@ -144,6 +145,18 @@ void main() {
     test('TargetsDashboardData.compute calculates concentric gauge metrics accurately', () {
       final limits = [
         const MonthlyLimitItem(
+          id: 'master_1',
+          title: 'Total Monthly Cap',
+          limitCap: 30000,
+          currentSpent: 7000,
+          percentageUsed: 23.3,
+          statusText: 'Buffer',
+          footerStatus: 'Good',
+          accentColor: Colors.white,
+          icon: Icons.roofing_outlined,
+          // categoryId is null => Master Budget
+        ),
+        const MonthlyLimitItem(
           id: '1',
           title: 'Dining',
           limitCap: 10000,
@@ -153,6 +166,7 @@ void main() {
           footerStatus: 'Good',
           accentColor: Colors.white,
           icon: Icons.restaurant,
+          categoryId: 'cat_dining',
         ),
         const MonthlyLimitItem(
           id: '2',
@@ -164,17 +178,21 @@ void main() {
           footerStatus: 'Good',
           accentColor: Colors.white,
           icon: Icons.shopping_basket,
+          categoryId: 'cat_groceries',
         ),
       ];
 
       final data = TargetsDashboardData.compute(
         limits: limits,
-        monthlySpent: 7000,
+        regularMonthlySpent: 7000,
       );
 
+      expect(data.hasMasterBudget, isTrue);
       expect(data.safeCapAmount, equals(30000.0));
       expect(data.budgetRemainingAmount, equals(23000.0));
       expect(data.budgetRemainingPct, closeTo(76.66, 0.1));
+      expect(data.allocatedCategoryAmount, equals(30000.0));
+      expect(data.unallocatedBuffer, equals(0.0));
       expect(data.runwayProgress, closeTo(0.233, 0.01));
     });
   });
@@ -185,10 +203,21 @@ void main() {
     late MockEventRepository eventRepo;
     late MockCategoryRepository categoryRepo;
     late _TestDashboardRepo dashboardRepo;
+    late MockTransactionRepository txRepo;
 
     setUp(() {
       homeRepo = _FakeHomeRepo();
       targetRepo = MockTargetRepository(initialTargets: [
+        {
+          'id': 'target_master',
+          'target_name': 'Total Family Monthly Budget',
+          'limit_amount': '30000.00',
+          'current_period_spent': '450.00',
+          'percentage_consumed': 1.5,
+          'notify_threshold_pct': 80,
+          'is_active': true,
+          'category_id': null,
+        },
         {
           'id': 'target_1',
           'target_name': 'Groceries & Household',
@@ -197,6 +226,13 @@ void main() {
           'percentage_consumed': 3.0,
           'notify_threshold_pct': 80,
           'is_active': true,
+          'category_id': 'cat_household',
+          'category': {
+            'id': 'cat_household',
+            'name': 'Household',
+            'icon_key': 'home',
+            'color_hex': '#C3F400',
+          },
         },
       ]);
       eventRepo = MockEventRepository(initialEvents: [
@@ -213,9 +249,19 @@ void main() {
       ]);
       categoryRepo = MockCategoryRepository();
       dashboardRepo = _TestDashboardRepo();
+      txRepo = MockTransactionRepository(customTransactions: [
+        {
+          'id': 'tx_reg_1',
+          'title': 'Monthly Groceries',
+          'amount': '450.00',
+          'type': 'EXPENSE',
+          'category_id': 'cat_household',
+          'event_id': null,
+        },
+      ]);
     });
 
-    testWidgets('TargetsScreen renders live limits and events', (tester) async {
+    testWidgets('TargetsScreen renders live limits, master budget, and events', (tester) async {
       tester.view.physicalSize = const Size(1080, 2400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -228,6 +274,7 @@ void main() {
             eventRepository: eventRepo,
             categoryRepository: categoryRepo,
             dashboardRepository: dashboardRepo,
+            transactionRepository: txRepo,
           ),
         ),
       );
@@ -235,8 +282,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Targets & Budgets'), findsOneWidget);
-      expect(find.text('Active Monthly Limits'), findsOneWidget);
+      expect(find.text('Category Allocations'), findsOneWidget);
       expect(find.text('Groceries & Household'), findsOneWidget);
+      expect(find.text('Total Family Monthly Budget'), findsOneWidget);
       expect(find.text('Savings Goals & Events'), findsOneWidget);
       expect(find.text('DURGA PUJA 2026'), findsOneWidget);
     });
@@ -249,6 +297,7 @@ void main() {
 
       final emptyTargetRepo = MockTargetRepository(initialTargets: []);
       final emptyEventRepo = MockEventRepository(initialEvents: []);
+      final emptyTxRepo = MockTransactionRepository(customTransactions: []);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -258,29 +307,35 @@ void main() {
             eventRepository: emptyEventRepo,
             categoryRepository: categoryRepo,
             dashboardRepository: dashboardRepo,
+            transactionRepository: emptyTxRepo,
           ),
         ),
       );
 
       await tester.pumpAndSettle();
 
-      expect(find.text('No active spending limits'), findsOneWidget);
+      expect(find.text('Set Master Monthly Budget first'), findsOneWidget);
       expect(find.text('No active sinking pools'), findsOneWidget);
     });
 
-    testWidgets('TargetsScreen opens creation options modal', (tester) async {
+    testWidgets('TargetsScreen opens creation options modal showing Master Budget option when absent', (tester) async {
       tester.view.physicalSize = const Size(1080, 2400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
+
+      final emptyTargetRepo = MockTargetRepository(initialTargets: []);
+      final emptyEventRepo = MockEventRepository(initialEvents: []);
+      final emptyTxRepo = MockTransactionRepository(customTransactions: []);
 
       await tester.pumpWidget(
         MaterialApp(
           home: TargetsScreen(
             repository: homeRepo,
-            targetRepository: targetRepo,
-            eventRepository: eventRepo,
+            targetRepository: emptyTargetRepo,
+            eventRepository: emptyEventRepo,
             categoryRepository: categoryRepo,
             dashboardRepository: dashboardRepo,
+            transactionRepository: emptyTxRepo,
           ),
         ),
       );
@@ -294,8 +349,69 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('What would you like to set?'), findsOneWidget);
-      expect(find.text('Category Spending Limit'), findsOneWidget);
+      expect(find.text('Set Master Monthly Budget'), findsWidgets);
       expect(find.text('Festival / Trip Sinking Pool'), findsOneWidget);
+    });
+
+    testWidgets('Event transactions do NOT deplete Master Budget or Category Limits', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      // Create a master target of 30,000 and Groceries category target of 15,000
+      final tRepo = MockTargetRepository(initialTargets: [
+        {
+          'id': 'master_target',
+          'target_name': 'Total Family Monthly Budget',
+          'limit_amount': '30000.00',
+          'current_period_spent': '0.00',
+          'percentage_consumed': 0.0,
+          'notify_threshold_pct': 80,
+          'is_active': true,
+          'category_id': null,
+        },
+        {
+          'id': 'cat_target',
+          'target_name': 'Groceries',
+          'limit_amount': '15000.00',
+          'current_period_spent': '0.00',
+          'percentage_consumed': 0.0,
+          'notify_threshold_pct': 80,
+          'is_active': true,
+          'category_id': 'cat_groceries',
+        },
+      ]);
+
+      // A large transaction of 6,000 for Durga Puja event (event_id is set)
+      final isolatedTxRepo = MockTransactionRepository(customTransactions: [
+        {
+          'id': 'tx_event_1',
+          'title': 'Garments for Puja',
+          'amount': '6000.00',
+          'type': 'EXPENSE',
+          'category_id': 'cat_groceries',
+          'event_id': 'ev_pujo', // Non-null event ID: ISOLATED!
+        },
+      ]);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: TargetsScreen(
+            repository: homeRepo,
+            targetRepository: tRepo,
+            eventRepository: eventRepo,
+            categoryRepository: categoryRepo,
+            dashboardRepository: dashboardRepo,
+            transactionRepository: isolatedTxRepo,
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Master budget should remain at 100% / ₹30,000 left because event expense is isolated!
+      expect(find.text('100%'), findsOneWidget);
+      expect(find.text('₹30,000 left'), findsOneWidget);
     });
   });
 

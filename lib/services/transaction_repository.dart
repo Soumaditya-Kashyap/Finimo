@@ -48,12 +48,22 @@ abstract class TransactionRepository {
 }
 
 class MockTransactionRepository implements TransactionRepository {
+  final List<Map<String, dynamic>>? customTransactions;
+
+  MockTransactionRepository({this.customTransactions});
+
   @override
   Future<List<TransactionItem>> getRecentTransactions({
     int limit = 5,
     String? memberId,
     String? type,
   }) async {
+    if (customTransactions != null) {
+      return customTransactions!
+          .take(limit)
+          .map((json) => TransactionItem.fromJson(json))
+          .toList();
+    }
     return const [
       TransactionItem(
         id: 'tx_1',
@@ -109,6 +119,12 @@ class MockTransactionRepository implements TransactionRepository {
     String? categoryId,
     String? eventId,
   }) async {
+    if (customTransactions != null) {
+      return {
+        'items': customTransactions!,
+        'next_cursor': null,
+      };
+    }
     final list = await getRecentTransactions(limit: limit);
     return {
       'items': list.map((e) => e.toJson()).toList(),
