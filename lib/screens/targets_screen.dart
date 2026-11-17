@@ -327,185 +327,6 @@ class _TargetsScreenState extends State<TargetsScreen> {
     return '${monthNames[_selectedMonth - 1]} $_selectedYear';
   }
 
-  void _showCreateOptions(BuildContext context) {
-    final masterTarget = _limits.where((l) => l.isMaster).firstOrNull;
-    final hasMaster = masterTarget != null;
-    final allocatedAmount = _limits
-        .where((l) => !l.isMaster)
-        .fold(0.0, (sum, l) => sum + l.limitCap);
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.canvasBase,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: AppColors.surface03,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                Text(
-                  'What would you like to set?',
-                  style: AppTypography.headlineSm(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Option 1: Monthly Limit / Target
-                InkWell(
-                  onTap: () {
-                    Navigator.of(ctx).pop();
-                    CreateTargetSheet.show(
-                      context,
-                      targetRepository: _targetRepo,
-                      categoryRepository: _categoryRepo,
-                      onTargetCreated: _loadData,
-                      hasMasterBudget: hasMaster,
-                      masterBudgetId: masterTarget?.id,
-                      masterBudgetAmount: masterTarget?.limitCap,
-                      allocatedCategoriesAmount: allocatedAmount,
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface01,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: hasMaster
-                            ? AppColors.ghostBorder
-                            : AppColors.primaryFixed.withValues(alpha: 0.5),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: AppColors.primaryFixed.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(
-                            hasMaster
-                                ? Icons.pie_chart_outline_rounded
-                                : Icons.account_balance_wallet_outlined,
-                            color: AppColors.primaryFixed,
-                            size: 24,
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                hasMaster
-                                    ? 'Category Spending Limit'
-                                    : 'Set Master Monthly Budget',
-                                style: AppTypography.labelMd(
-                                  color: AppColors.textPrimary,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                hasMaster
-                                    ? 'Allocate sub-limits for Groceries, Dining, etc.'
-                                    : 'Mandatory: Set overall family monthly cap (e.g. ₹20,000)',
-                                style: AppTypography.bodySm(color: AppColors.textMuted),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Icon(Icons.arrow_forward_ios_rounded,
-                            color: AppColors.textMuted, size: 14),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // Option 2: Conjoined Event / Sinking Pool
-                InkWell(
-                  onTap: () {
-                    Navigator.of(ctx).pop();
-                    CreateEventSheet.show(
-                      context,
-                      eventRepository: _eventRepo,
-                      onEventCreated: _loadData,
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface01,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.ghostBorder),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: AppColors.secondaryContainer.withValues(alpha: 0.3),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(Icons.celebration_outlined,
-                              color: AppColors.secondary, size: 24),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Festival / Trip Sinking Pool',
-                                style: AppTypography.labelMd(
-                                  color: AppColors.textPrimary,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'Durga Puja, Diwali, Vacation with shared member equity.',
-                                style: AppTypography.bodySm(color: AppColors.textMuted),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Icon(Icons.arrow_forward_ios_rounded,
-                            color: AppColors.textMuted, size: 14),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   void _showLimitDetail(MonthlyLimitItem limit) {
     showModalBottomSheet(
       context: context,
@@ -1029,20 +850,77 @@ class _TargetsScreenState extends State<TargetsScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Category Allocations',
-                      style: AppTypography.headlineSm(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w700,
+                    Row(
+                      children: [
+                        Text(
+                          'Category Allocations',
+                          style: AppTypography.headlineSm(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${categoryLimits.length}',
+                          style: AppTypography.labelSm(
+                            color: AppColors.textMuted,
+                            fontWeight: FontWeight.w600,
+                          ).copyWith(fontSize: 12),
+                        ),
+                      ],
+                    ),
+                    if (masterTarget != null && categoryLimits.isNotEmpty)
+                      InkWell(
+                        onTap: () {
+                          CreateTargetSheet.show(
+                            context,
+                            targetRepository: _targetRepo,
+                            categoryRepository: _categoryRepo,
+                            onTargetCreated: _loadData,
+                            hasMasterBudget: true,
+                            masterBudgetId: masterTarget.id,
+                            masterBudgetAmount: masterTarget.limitCap,
+                            allocatedCategoriesAmount:
+                                _gaugeData.allocatedCategoryAmount,
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryFixed.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                                color: AppColors.primaryFixed
+                                    .withValues(alpha: 0.3)),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.add,
+                                  size: 14, color: AppColors.primaryFixed),
+                              SizedBox(width: 4),
+                              Text(
+                                'Add Category',
+                                style: TextStyle(
+                                  color: AppColors.primaryFixed,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else if (masterTarget == null)
+                      Text(
+                        'LOCKED',
+                        style: AppTypography.labelSm(
+                          color: AppColors.textMuted,
+                          fontWeight: FontWeight.w600,
+                        ).copyWith(fontSize: 10),
                       ),
-                    ),
-                    Text(
-                      '${categoryLimits.length} CATEGORIES',
-                      style: AppTypography.labelSm(
-                        color: AppColors.textMuted,
-                        fontWeight: FontWeight.w600,
-                      ).copyWith(fontSize: 10),
-                    ),
                   ],
                 ),
 
@@ -1059,58 +937,66 @@ class _TargetsScreenState extends State<TargetsScreen> {
                     ),
                     child: Column(
                       children: [
-                        const Icon(Icons.pie_chart_outline_rounded,
-                            color: AppColors.textMuted, size: 32),
+                        Icon(
+                          masterTarget == null
+                              ? Icons.lock_outline_rounded
+                              : Icons.pie_chart_outline_rounded,
+                          color: AppColors.textMuted,
+                          size: 30,
+                        ),
                         const SizedBox(height: 10),
                         Text(
                           masterTarget == null
-                              ? 'Set Master Monthly Budget first'
+                              ? 'Category limits locked'
                               : 'No category limits allocated yet',
                           style: AppTypography.headlineSm(
                             color: AppColors.textPrimary,
                             fontWeight: FontWeight.w600,
-                          ).copyWith(fontSize: 16),
+                          ).copyWith(fontSize: 15),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           masterTarget == null
-                              ? 'Define your overall monthly cap before creating category sub-limits.'
-                              : 'Allocate sub-limits for Groceries, Dining, etc. from your Master Budget cushion.',
+                              ? 'Set your Master Monthly Budget above to unlock category sub-limits.'
+                              : 'Allocate sub-limits for Groceries, Dining, etc. from your ₹${CurrencyFormatter.formatInr(_gaugeData.unallocatedBuffer)} cushion.',
                           textAlign: TextAlign.center,
                           style:
                               AppTypography.bodySm(color: AppColors.textMuted),
                         ),
-                        const SizedBox(height: 14),
-                        OutlinedButton.icon(
-                          onPressed: () {
-                            CreateTargetSheet.show(
-                              context,
-                              targetRepository: _targetRepo,
-                              categoryRepository: _categoryRepo,
-                              onTargetCreated: _loadData,
-                              hasMasterBudget: masterTarget != null,
-                              masterBudgetId: masterTarget?.id,
-                              masterBudgetAmount: masterTarget?.limitCap,
-                              allocatedCategoriesAmount:
-                                  _gaugeData.allocatedCategoryAmount,
-                            );
-                          },
-                          icon: const Icon(Icons.add,
-                              size: 16, color: AppColors.primaryFixed),
-                          label: Text(
-                              masterTarget == null
-                                  ? 'Set Master Monthly Budget'
-                                  : 'Allocate Category Limit',
-                              style: const TextStyle(
-                                  color: AppColors.primaryFixed,
-                                  fontWeight: FontWeight.bold)),
-                          style: OutlinedButton.styleFrom(
-                            side:
-                                const BorderSide(color: AppColors.primaryFixed),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10)),
+                        if (masterTarget != null) ...[
+                          const SizedBox(height: 14),
+                          OutlinedButton.icon(
+                            onPressed: () {
+                              CreateTargetSheet.show(
+                                context,
+                                targetRepository: _targetRepo,
+                                categoryRepository: _categoryRepo,
+                                onTargetCreated: _loadData,
+                                hasMasterBudget: true,
+                                masterBudgetId: masterTarget.id,
+                                masterBudgetAmount: masterTarget.limitCap,
+                                allocatedCategoriesAmount:
+                                    _gaugeData.allocatedCategoryAmount,
+                              );
+                            },
+                            icon: const Icon(Icons.add,
+                                size: 16, color: AppColors.primaryFixed),
+                            label: const Text(
+                              'Allocate Category Limit',
+                              style: TextStyle(
+                                color: AppColors.primaryFixed,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(
+                                  color: AppColors.primaryFixed),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                   )
@@ -1165,7 +1051,45 @@ class _TargetsScreenState extends State<TargetsScreen> {
                         ),
                       ],
                     ),
-                    if (widget.onSeeLedgerTap != null)
+                    if (_sinkingFunds.isNotEmpty)
+                      InkWell(
+                        onTap: () {
+                          CreateEventSheet.show(
+                            context,
+                            eventRepository: _eventRepo,
+                            onEventCreated: _loadData,
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: AppColors.secondary.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                                color: AppColors.secondary
+                                    .withValues(alpha: 0.3)),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.add,
+                                  size: 14, color: AppColors.secondary),
+                              SizedBox(width: 4),
+                              Text(
+                                'New Pool',
+                                style: TextStyle(
+                                  color: AppColors.secondary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else if (widget.onSeeLedgerTap != null)
                       InkWell(
                         onTap: widget.onSeeLedgerTap,
                         child: Text(
@@ -1192,7 +1116,8 @@ class _TargetsScreenState extends State<TargetsScreen> {
                     ),
                     child: Column(
                       children: [
-                        const Icon(Icons.celebration_outlined, color: AppColors.secondary, size: 32),
+                        const Icon(Icons.celebration_outlined,
+                            color: AppColors.secondary, size: 32),
                         const SizedBox(height: 10),
                         Text(
                           'No active sinking pools',
@@ -1205,7 +1130,8 @@ class _TargetsScreenState extends State<TargetsScreen> {
                         Text(
                           'Create a shared budget pool for Durga Puja, Diwali, or Family Trips.',
                           textAlign: TextAlign.center,
-                          style: AppTypography.bodySm(color: AppColors.textMuted),
+                          style:
+                              AppTypography.bodySm(color: AppColors.textMuted),
                         ),
                         const SizedBox(height: 14),
                         OutlinedButton.icon(
@@ -1216,12 +1142,16 @@ class _TargetsScreenState extends State<TargetsScreen> {
                               onEventCreated: _loadData,
                             );
                           },
-                          icon: const Icon(Icons.add, size: 16, color: AppColors.secondary),
+                          icon: const Icon(Icons.add,
+                              size: 16, color: AppColors.secondary),
                           label: const Text('New Sinking Pool',
-                              style: TextStyle(color: AppColors.secondary, fontWeight: FontWeight.bold)),
+                              style: TextStyle(
+                                  color: AppColors.secondary,
+                                  fontWeight: FontWeight.bold)),
                           style: OutlinedButton.styleFrom(
                             side: const BorderSide(color: AppColors.secondary),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10)),
                           ),
                         ),
                       ],
@@ -1255,47 +1185,6 @@ class _TargetsScreenState extends State<TargetsScreen> {
                       );
                     },
                   ),
-
-                const SizedBox(height: 24),
-
-                // 5. Create New Target Action Button
-                InkWell(
-                  onTap: () => _showCreateOptions(context),
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryFixed,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primaryFixed.withValues(alpha: 0.28),
-                          blurRadius: 28,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.add_circle_outline_rounded,
-                          color: AppColors.canvasBase,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Create New Target or Event',
-                          style: AppTypography.headlineSm(
-                            color: AppColors.canvasBase,
-                            fontWeight: FontWeight.w700,
-                          ).copyWith(fontSize: 16),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
               ],
             ],
           ),

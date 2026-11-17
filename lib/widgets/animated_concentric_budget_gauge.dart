@@ -219,7 +219,7 @@ class _AnimatedConcentricBudgetGaugeState
                             Text(
                               hasBudget
                                   ? '${CurrencyFormatter.formatInr(widget.data.budgetRemainingAmount)} left'
-                                  : 'Tap + to set monthly cap',
+                                  : 'Set cap below to activate',
                               style: AppTypography.labelMd(
                                 color: hasBudget
                                     ? AppColors.primaryFixed

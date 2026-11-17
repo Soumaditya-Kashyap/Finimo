@@ -314,11 +314,13 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.text('Set Master Monthly Budget first'), findsOneWidget);
+      expect(find.widgetWithText(ElevatedButton, 'Set Master Monthly Budget'), findsOneWidget);
+      expect(find.text('Category limits locked'), findsOneWidget);
       expect(find.text('No active sinking pools'), findsOneWidget);
+      expect(find.text('New Sinking Pool'), findsOneWidget);
     });
 
-    testWidgets('TargetsScreen opens creation options modal showing Master Budget option when absent', (tester) async {
+    testWidgets('TargetsScreen opens Master Budget sheet when tapping Set Master Monthly Budget', (tester) async {
       tester.view.physicalSize = const Size(1080, 2400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -342,15 +344,13 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Tap bottom Create button
-      final createBtn = find.text('Create New Target or Event');
-      expect(createBtn, findsOneWidget);
-      await tester.tap(createBtn);
+      // Tap Set Master Monthly Budget button
+      final setMasterBtn = find.widgetWithText(ElevatedButton, 'Set Master Monthly Budget');
+      expect(setMasterBtn, findsOneWidget);
+      await tester.tap(setMasterBtn);
       await tester.pumpAndSettle();
 
-      expect(find.text('What would you like to set?'), findsOneWidget);
-      expect(find.text('Set Master Monthly Budget'), findsWidgets);
-      expect(find.text('Festival / Trip Sinking Pool'), findsOneWidget);
+      expect(find.textContaining('Step 1: Set your Family Master Monthly Budget'), findsOneWidget);
     });
 
     testWidgets('Event transactions do NOT deplete Master Budget or Category Limits', (tester) async {
