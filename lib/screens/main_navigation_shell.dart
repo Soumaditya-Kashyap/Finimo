@@ -58,6 +58,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                 transactionRepository: widget.transactionRepository,
                 categoryRepository: widget.categoryRepository,
                 eventRepository: widget.eventRepository,
+                isActive: _currentIndex == 0,
                 onSeeLedgerTap: () {
                   setState(() => _currentIndex = 1);
                 },
@@ -69,6 +70,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                 familyRepository: widget.familyRepository,
                 categoryRepository: widget.categoryRepository,
                 dashboardRepository: widget.dashboardRepository,
+                isActive: _currentIndex == 1,
               ),
               // Tab 2: Targets
               TargetsScreen(

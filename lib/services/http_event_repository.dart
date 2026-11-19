@@ -131,10 +131,16 @@ class HttpEventRepository implements EventRepository {
         requiresAuth: true,
       );
     } on ApiException catch (e) {
-      if (e.statusCode == 409) {
-        // If hard delete fails with 409 (because historical or soft-deleted transactions
+      if (e.statusCode == 409 ||
+          e.statusCode == 400 ||
+          e.statusCode == 422 ||
+          e.message.toLowerCase().contains('receipt') ||
+          e.message.toLowerCase().contains('item') ||
+          e.message.toLowerCase().contains('transaction') ||
+          e.message.toLowerCase().contains('linked')) {
+        // If hard delete fails (because historical or soft-deleted transactions
         // reference this event via foreign key), safely archive the event so it is
-        // removed from active sinking pools and dashboards.
+        // removed from active sinking pools and dashboards without breaking ledger history.
         await updateEvent(id, status: 'ARCHIVED');
         return;
       }

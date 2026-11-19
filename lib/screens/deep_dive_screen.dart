@@ -34,6 +34,14 @@ class _DeepDiveScreenState extends State<DeepDiveScreen> {
     _loadData();
   }
 
+  @override
+  void didUpdateWidget(covariant DeepDiveScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive && !oldWidget.isActive) {
+      _loadData();
+    }
+  }
+
   void _loadData() {
     _futureData = widget.repository.getDeepDiveSummaryData();
   }

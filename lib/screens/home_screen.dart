@@ -29,6 +29,7 @@ class HomeScreen extends StatefulWidget {
   final CategoryRepository? categoryRepository;
   final EventRepository? eventRepository;
   final VoidCallback? onSeeLedgerTap;
+  final bool isActive;
 
   const HomeScreen({
     super.key,
@@ -39,6 +40,7 @@ class HomeScreen extends StatefulWidget {
     this.categoryRepository,
     this.eventRepository,
     this.onSeeLedgerTap,
+    this.isActive = true,
   });
 
   @override
@@ -70,6 +72,14 @@ class _HomeScreenState extends State<HomeScreen> {
     _eventRepo =
         widget.eventRepository ?? HttpEventRepository();
     _loadData();
+  }
+
+  @override
+  void didUpdateWidget(covariant HomeScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive && !oldWidget.isActive) {
+      _loadData(selectedMemberId: _selectedMemberId);
+    }
   }
 
   void _loadData({String? selectedMemberId}) {
@@ -136,8 +146,9 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: FutureBuilder<_HomeScreenData>(
         future: _futureData,
+        initialData: _lastLoadedData,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
             return const Center(
               child: CircularProgressIndicator(
                 color: AppColors.primaryFixed,

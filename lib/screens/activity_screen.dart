@@ -23,6 +23,7 @@ class ActivityScreen extends StatefulWidget {
   final FamilyRepository? familyRepository;
   final CategoryRepository? categoryRepository;
   final DashboardRepository? dashboardRepository;
+  final bool isActive;
 
   const ActivityScreen({
     super.key,
@@ -31,6 +32,7 @@ class ActivityScreen extends StatefulWidget {
     this.familyRepository,
     this.categoryRepository,
     this.dashboardRepository,
+    this.isActive = true,
   });
 
   @override
@@ -90,6 +92,14 @@ class _ActivityScreenState extends State<ActivityScreen> {
   }
 
   @override
+  void didUpdateWidget(covariant ActivityScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive && !oldWidget.isActive) {
+      _fetchTransactions(reset: true, silent: true);
+    }
+  }
+
+  @override
   void dispose() {
     _scrollController.dispose();
     _searchController.dispose();
@@ -120,14 +130,18 @@ class _ActivityScreenState extends State<ActivityScreen> {
     await _fetchTransactions(reset: true);
   }
 
-  Future<void> _fetchTransactions({bool reset = false}) async {
+  Future<void> _fetchTransactions({bool reset = false, bool silent = false}) async {
     if (reset) {
-      setState(() {
-        _isLoading = true;
-        _errorMessage = null;
+      if (!silent) {
+        setState(() {
+          _isLoading = true;
+          _errorMessage = null;
+          _nextCursor = null;
+          _transactions.clear();
+        });
+      } else {
         _nextCursor = null;
-        _transactions.clear();
-      });
+      }
     }
 
     String? typeParam;
@@ -155,6 +169,9 @@ class _ActivityScreenState extends State<ActivityScreen> {
 
       if (mounted) {
         setState(() {
+          if (reset && silent) {
+            _transactions.clear();
+          }
           _transactions.addAll(newItems);
           _nextCursor = data['next_cursor']?.toString();
           _recalculateSummary();
