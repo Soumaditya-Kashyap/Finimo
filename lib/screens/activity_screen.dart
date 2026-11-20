@@ -181,9 +181,34 @@ class _ActivityScreenState extends State<ActivityScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = e.toString();
+          if (_transactions.isEmpty) {
+            _errorMessage = e.toString();
+          }
           _isLoading = false;
         });
+
+        if (_transactions.isNotEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Row(
+                children: [
+                  Icon(Icons.wifi_off_rounded, color: AppColors.dangerCoral, size: 18),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Connection issue. Showing cached transactions.',
+                      style: TextStyle(color: Colors.white, fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: AppColors.surface02,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
       }
     }
   }

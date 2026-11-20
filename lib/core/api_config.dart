@@ -14,9 +14,9 @@ class ApiConfig {
 
   static const String apiVersion = '/api/v1';
 
-  // Request timeout duration
-  static const Duration connectTimeout = Duration(seconds: 15);
-  static const Duration receiveTimeout = Duration(seconds: 20);
+  // Request timeout duration (30s for resilient mobile 4G/5G handoffs)
+  static const Duration connectTimeout = Duration(seconds: 30);
+  static const Duration receiveTimeout = Duration(seconds: 30);
 
   // -------------------------------------------------------------
   // Auth Endpoints

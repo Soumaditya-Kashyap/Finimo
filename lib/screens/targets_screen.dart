@@ -50,7 +50,6 @@ class _TargetsScreenState extends State<TargetsScreen> {
   late final TargetRepository _targetRepo;
   late final EventRepository _eventRepo;
   late final CategoryRepository _categoryRepo;
-  late final DashboardRepository _dashboardRepo;
   late final TransactionRepository _transactionRepo;
 
   int _selectedMonth = DateTime.now().month;
@@ -77,7 +76,6 @@ class _TargetsScreenState extends State<TargetsScreen> {
     _targetRepo = widget.targetRepository ?? HttpTargetRepository();
     _eventRepo = widget.eventRepository ?? HttpEventRepository();
     _categoryRepo = widget.categoryRepository ?? HttpCategoryRepository();
-    _dashboardRepo = widget.dashboardRepository ?? HttpDashboardRepository();
     _transactionRepo =
         widget.transactionRepository ?? HttpTransactionRepository();
     _loadData();
@@ -103,10 +101,6 @@ class _TargetsScreenState extends State<TargetsScreen> {
       final results = await Future.wait([
         _targetRepo.getTargets(isActive: true),
         _eventRepo.getEvents(status: 'ACTIVE'),
-        _dashboardRepo.getDashboardMetrics(
-          month: _selectedMonth,
-          year: _selectedYear,
-        ),
         _transactionRepo
             .getTransactionsCursor(
               month: _selectedMonth,
@@ -118,7 +112,7 @@ class _TargetsScreenState extends State<TargetsScreen> {
 
       final rawTargets = results[0] as List<Map<String, dynamic>>;
       final rawEvents = results[1] as List<Map<String, dynamic>>;
-      final txData = results[3] as Map<String, dynamic>;
+      final txData = results[2] as Map<String, dynamic>;
       final rawTxList = (txData['items'] as List?)
               ?.whereType<Map<String, dynamic>>()
               .toList() ??
@@ -191,9 +185,36 @@ class _TargetsScreenState extends State<TargetsScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = e.toString().replaceFirst('Exception: ', '');
+          // If screen is completely empty, show full error view so user can Retry
+          if (_limits.isEmpty && !_gaugeData.hasMasterBudget && _sinkingFunds.isEmpty) {
+            _errorMessage = e.toString().replaceFirst('Exception: ', '');
+          }
           _isLoading = false;
         });
+
+        // If screen already has data, NEVER wipe it out! Keep it and gently notify user
+        if (_limits.isNotEmpty || _gaugeData.hasMasterBudget || _sinkingFunds.isNotEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Row(
+                children: [
+                  Icon(Icons.wifi_off_rounded, color: AppColors.dangerCoral, size: 18),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Connection issue. Displaying cached targets.',
+                      style: TextStyle(color: Colors.white, fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: AppColors.surface02,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
       }
     }
   }
@@ -637,7 +658,7 @@ class _TargetsScreenState extends State<TargetsScreen> {
 
               const SizedBox(height: 18),
 
-              if (_isLoading)
+              if (_isLoading && _limits.isEmpty && !_gaugeData.hasMasterBudget && _sinkingFunds.isEmpty)
                 const Center(
                   child: Padding(
                     padding: EdgeInsets.symmetric(vertical: 40),
@@ -645,7 +666,7 @@ class _TargetsScreenState extends State<TargetsScreen> {
                         color: AppColors.primaryFixed),
                   ),
                 )
-              else if (_errorMessage != null)
+              else if (_errorMessage != null && _limits.isEmpty && !_gaugeData.hasMasterBudget && _sinkingFunds.isEmpty)
                 Center(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 40),
