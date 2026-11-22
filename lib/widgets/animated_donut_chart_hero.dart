@@ -43,7 +43,8 @@ class _AnimatedDonutChartHeroState extends State<AnimatedDonutChartHero>
   @override
   void didUpdateWidget(covariant AnimatedDonutChartHero oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.isActive && (!oldWidget.isActive || widget.data != oldWidget.data)) {
+    if (widget.isActive &&
+        (!oldWidget.isActive || widget.data != oldWidget.data)) {
       _controller.forward(from: 0.0);
     }
   }
@@ -56,6 +57,40 @@ class _AnimatedDonutChartHeroState extends State<AnimatedDonutChartHero>
 
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final isCurrentMonth =
+        widget.data.year == now.year && widget.data.month == now.month;
+    final daysInMonth =
+        DateUtils.getDaysInMonth(widget.data.year, widget.data.month);
+    final daysRecorded = isCurrentMonth ? now.day : daysInMonth;
+
+    String badgeLabel;
+    Color badgeColor;
+    if (widget.data.budgetHealthScorePct != null) {
+      final score = widget.data.budgetHealthScorePct!;
+      badgeLabel = 'Health: $score%';
+      badgeColor =
+          score >= 70 ? AppColors.primaryFixed : AppColors.dangerCoral;
+    } else if (widget.data.totalOutflow == 0) {
+      badgeLabel = 'Zero Outflow';
+      badgeColor = AppColors.tertiaryFixed;
+    } else {
+      badgeLabel = 'Active Pacing';
+      badgeColor = const Color(0xFFA6CF00);
+    }
+
+    String paceLabel;
+    if (widget.data.dailySafeToSpend != null &&
+        widget.data.dailySafeToSpend! > 0) {
+      paceLabel =
+          'Daily safe: ${CurrencyFormatter.formatInr(widget.data.dailySafeToSpend!)}/day';
+    } else if (daysRecorded > 0 && widget.data.totalOutflow > 0) {
+      final avg = widget.data.totalOutflow / daysRecorded;
+      paceLabel = 'Average ${CurrencyFormatter.formatInr(avg)}/day';
+    } else {
+      paceLabel = 'Average ₹0/day';
+    }
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
@@ -146,7 +181,7 @@ class _AnimatedDonutChartHeroState extends State<AnimatedDonutChartHero>
                               style: AppTypography.displayLg(
                                 color: AppColors.textPrimary,
                               ).copyWith(
-                                fontSize: 34,
+                                fontSize: 32,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: -1.0,
                               ),
@@ -168,11 +203,11 @@ class _AnimatedDonutChartHeroState extends State<AnimatedDonutChartHero>
                                     width: 6,
                                     height: 6,
                                     decoration: BoxDecoration(
-                                      color: AppColors.primaryFixed,
+                                      color: badgeColor,
                                       shape: BoxShape.circle,
                                       boxShadow: [
                                         BoxShadow(
-                                          color: AppColors.primaryFixed.withValues(alpha: 0.8),
+                                          color: badgeColor.withValues(alpha: 0.8),
                                           blurRadius: 6,
                                         ),
                                       ],
@@ -180,9 +215,9 @@ class _AnimatedDonutChartHeroState extends State<AnimatedDonutChartHero>
                                   ),
                                   const SizedBox(width: 6),
                                   Text(
-                                    widget.data.statusLabel,
+                                    badgeLabel,
                                     style: AppTypography.labelSm(
-                                      color: const Color(0xFFA6CF00),
+                                      color: badgeColor,
                                       fontWeight: FontWeight.w700,
                                     ).copyWith(fontSize: 10),
                                   ),
@@ -204,11 +239,11 @@ class _AnimatedDonutChartHeroState extends State<AnimatedDonutChartHero>
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Average ${CurrencyFormatter.formatInr(widget.data.dailyPace)}/day',
+                    paceLabel,
                     style: AppTypography.bodySm(color: AppColors.textMuted),
                   ),
                   Text(
-                    '${widget.data.daysMonitored} DAYS RECORDED',
+                    '$daysRecorded DAYS RECORDED',
                     style: AppTypography.labelSm(
                       color: AppColors.primaryFixed,
                       fontWeight: FontWeight.w700,
@@ -249,12 +284,12 @@ class _DonutChartPainter extends CustomPainter {
 
     if (categories.isEmpty || animationProgress <= 0) return;
 
-    // Segments starting from top-center (-pi/2)
     var currentAngle = -math.pi / 2;
     const gapAngle = 0.04; // Visual micro gap between segments
 
     for (final cat in categories) {
-      final sweepAngle = (cat.percentage / 100) * 2 * math.pi * animationProgress;
+      final sweepAngle =
+          (cat.percentage / 100) * 2 * math.pi * animationProgress;
       if (sweepAngle <= 0) continue;
 
       final segmentPaint = Paint()
@@ -263,7 +298,8 @@ class _DonutChartPainter extends CustomPainter {
         ..strokeWidth = strokeWidth
         ..strokeCap = StrokeCap.round;
 
-      final effectiveSweep = (sweepAngle - gapAngle).clamp(0.01, sweepAngle);
+      final effectiveSweep =
+          (sweepAngle - gapAngle).clamp(0.01, sweepAngle);
 
       canvas.drawArc(
         Rect.fromCircle(center: center, radius: radius),

@@ -26,45 +26,53 @@ class DeepDiveCategoryBurnCard extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // Left: Icon + Title & Percentage
-          Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: category.color.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  category.icon,
-                  color: category.color,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    category.categoryName,
-                    style: AppTypography.bodyLg(
-                      color: AppColors.textPrimary,
-                    ).copyWith(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
-                    ),
+          Expanded(
+            child: Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: category.color.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${category.percentage.round()}% of total spend',
-                    style: AppTypography.bodySm(color: AppColors.textMuted),
+                  child: Icon(
+                    category.icon,
+                    color: category.color,
+                    size: 20,
                   ),
-                ],
-              ),
-            ],
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        category.categoryName,
+                        style: AppTypography.bodyLg(
+                          color: AppColors.textPrimary,
+                        ).copyWith(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${category.percentage.toStringAsFixed(1)}% of total spend',
+                        style: AppTypography.bodySm(color: AppColors.textMuted),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
 
-          // Right: Amount + Delta / Status Label
+          const SizedBox(width: 12),
+
+          // Right: Amount + % Share Badge
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -75,19 +83,20 @@ class DeepDiveCategoryBurnCard extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ).copyWith(fontSize: 16),
               ),
-              const SizedBox(height: 2),
-              Text(
-                category.deltaVsLastMonth,
-                style: AppTypography.labelSm(
-                  color: category.deltaVsLastMonth.startsWith('+')
-                      ? const Color(0xFFA6CF00)
-                      : (category.deltaVsLastMonth.startsWith('-')
-                          ? const Color(0xFFA6CF00)
-                          : (category.deltaVsLastMonth.contains('Seasonal')
-                              ? AppColors.tertiaryFixed
-                              : AppColors.textMuted)),
-                  fontWeight: FontWeight.w600,
-                ).copyWith(fontSize: 11),
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: category.color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(9999),
+                ),
+                child: Text(
+                  '${category.percentage.round()}% share',
+                  style: AppTypography.labelSm(
+                    color: category.color,
+                    fontWeight: FontWeight.w700,
+                  ).copyWith(fontSize: 10),
+                ),
               ),
             ],
           ),

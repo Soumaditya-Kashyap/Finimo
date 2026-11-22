@@ -305,50 +305,53 @@ class MockHomeRepository implements HomeRepository {
 
   @override
   Future<DeepDiveSummaryData> getDeepDiveSummaryData() async {
-    // TODO: Replace with live API call to GET /api/v1/insights/summary
     return const DeepDiveSummaryData(
+      month: 11,
+      year: 2026,
+      timezone: 'Asia/Kolkata',
       totalOutflow: 58281.00,
-      statusLabel: 'Under Budget',
-      dailyPace: 1879.00,
-      daysMonitored: 31,
+      totalIncome: 120000.00,
+      consolidatedLiquidity: 200000.00,
+      dailySafeToSpend: 1879.00,
+      budgetHealthScorePct: 88,
       categories: [
         InsightCategoryBurn(
+          categoryId: 'cat_household',
           categoryName: 'Household & Utilities',
           amount: 19815.00,
           percentage: 34.0,
-          deltaVsLastMonth: '+4.2% vs Sep',
           color: Color(0xFFC3F400), // Electric Lime
           icon: Icons.roofing_outlined,
         ),
         InsightCategoryBurn(
+          categoryId: 'cat_emis',
           categoryName: 'Fixed EMIs & Debt',
           amount: 18067.00,
           percentage: 31.0,
-          deltaVsLastMonth: 'Locked schedule',
           color: Color(0xFFE9B3FF), // Neon Purple
           icon: Icons.payments_outlined,
         ),
         InsightCategoryBurn(
+          categoryId: 'cat_festival',
           categoryName: 'Festival & Festive Gifts',
           amount: 8742.00,
           percentage: 15.0,
-          deltaVsLastMonth: 'Seasonal spike',
           color: Color(0xFF63F7FF), // Cyber Cyan
           icon: Icons.celebration_outlined,
         ),
         InsightCategoryBurn(
+          categoryId: 'cat_dining',
           categoryName: 'Food & Gourmet Dining',
           amount: 6993.00,
           percentage: 12.0,
-          deltaVsLastMonth: '-8.1% vs Sep',
           color: Color(0xFFA6CF00), // Lime Dim
           icon: Icons.restaurant_outlined,
         ),
         InsightCategoryBurn(
+          categoryId: 'cat_medical',
           categoryName: 'Medical & Pharmacy',
           amount: 4664.00,
           percentage: 8.0,
-          deltaVsLastMonth: 'Routine checkups',
           color: Color(0xFFFF453A), // Coral Red
           icon: Icons.medical_services_outlined,
         ),
@@ -357,37 +360,28 @@ class MockHomeRepository implements HomeRepository {
         InsightMemberBurn(
           memberId: 'm1_arpa',
           name: 'Arpa',
-          role: 'Admin • Primary Earner',
           initial: 'A',
           totalPaid: 26226.00,
           totalBenefited: 20000.00,
           percentageOfTotal: 45.0,
-          targetCap: 36500.00,
-          bufferLeft: 10274.00,
           accentColor: Color(0xFFC3F400), // Electric Lime
         ),
         InsightMemberBurn(
           memberId: 'm2_chandrani',
           name: 'Chandrani',
-          role: 'Co-Budgeter',
           initial: 'C',
           totalPaid: 20398.00,
           totalBenefited: 9025.00,
           percentageOfTotal: 35.0,
-          targetCap: 25000.00,
-          bufferLeft: 4602.00,
           accentColor: Color(0xFFE9B3FF), // Neon Purple
         ),
         InsightMemberBurn(
           memberId: 'm3_aryahi',
           name: 'Aryahi',
-          role: 'Dependent Minor',
           initial: 'A',
           totalPaid: 11657.00,
           totalBenefited: 5500.00,
           percentageOfTotal: 20.0,
-          targetCap: 12500.00,
-          bufferLeft: 843.00,
           accentColor: Color(0xFF63F7FF), // Cyber Cyan
         ),
       ],

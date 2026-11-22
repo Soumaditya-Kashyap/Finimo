@@ -8,6 +8,7 @@ import '../services/dashboard_repository.dart';
 import '../services/event_repository.dart';
 import '../services/family_repository.dart';
 import '../services/home_repository.dart';
+import '../services/insight_repository.dart';
 import '../services/target_repository.dart';
 import '../services/transaction_repository.dart';
 import '../theme/app_colors.dart';
@@ -21,6 +22,7 @@ class MainNavigationShell extends StatefulWidget {
   final DashboardRepository? dashboardRepository;
   final TargetRepository? targetRepository;
   final EventRepository? eventRepository;
+  final InsightRepository? insightRepository;
 
   const MainNavigationShell({
     super.key,
@@ -31,6 +33,7 @@ class MainNavigationShell extends StatefulWidget {
     this.dashboardRepository,
     this.targetRepository,
     this.eventRepository,
+    this.insightRepository,
   });
 
   @override
@@ -88,6 +91,8 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
               // Tab 3: Deep Dive
               DeepDiveScreen(
                 repository: widget.homeRepository,
+                insightRepository: widget.insightRepository,
+                familyRepository: widget.familyRepository,
                 isActive: _currentIndex == 3,
               ),
             ],

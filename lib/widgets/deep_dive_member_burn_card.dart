@@ -14,7 +14,7 @@ class DeepDiveMemberBurnCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final progress = (member.totalPaid / member.targetCap).clamp(0.0, 1.0);
+    final progress = (member.percentageOfTotal / 100.0).clamp(0.0, 1.0);
 
     return Container(
       width: double.infinity,
@@ -25,8 +25,9 @@ class DeepDiveMemberBurnCard extends StatelessWidget {
         border: Border.all(color: AppColors.ghostBorder, width: 0.5),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Row 1: Member Initial Avatar + Name/Role + Amount/Percentage
+          // Row 1: Member Initial Avatar + Name + Spend & Percentage
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -65,7 +66,7 @@ class DeepDiveMemberBurnCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        member.role,
+                        'Family Contributor',
                         style: AppTypography.bodySm(color: AppColors.textMuted),
                       ),
                     ],
@@ -86,7 +87,7 @@ class DeepDiveMemberBurnCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${member.percentageOfTotal.round()}% total spend',
+                    '${member.percentageOfTotal.round()}% of total spend',
                     style: AppTypography.labelSm(
                       color: member.accentColor,
                       fontWeight: FontWeight.w700,
@@ -99,7 +100,7 @@ class DeepDiveMemberBurnCard extends StatelessWidget {
 
           const SizedBox(height: 14),
 
-          // Row 2: Progress Track
+          // Row 2: Progress Track (% Share)
           Container(
             width: double.infinity,
             height: 8,
@@ -109,7 +110,7 @@ class DeepDiveMemberBurnCard extends StatelessWidget {
             ),
             child: FractionallySizedBox(
               alignment: Alignment.centerLeft,
-              widthFactor: progress,
+              widthFactor: progress > 0 ? progress : 0.02,
               child: Container(
                 decoration: BoxDecoration(
                   color: member.accentColor,
@@ -125,25 +126,43 @@ class DeepDiveMemberBurnCard extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
 
-          // Row 3: Target Cap & Buffer / Status
+          // Row 3: Paid vs Benefited Breakdown
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Monthly Limit: ${CurrencyFormatter.formatInr(member.targetCap)}',
-                style: AppTypography.bodySm(color: AppColors.textMuted),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.arrow_upward_rounded,
+                    size: 14,
+                    color: AppColors.textMuted,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Paid: ${CurrencyFormatter.formatInr(member.totalPaid)}',
+                    style: AppTypography.bodySm(
+                      color: AppColors.textPrimary,
+                    ).copyWith(fontWeight: FontWeight.w600, fontSize: 12),
+                  ),
+                ],
               ),
-              Text(
-                member.bufferLeft > 1000
-                    ? '${CurrencyFormatter.formatInr(member.bufferLeft)} buffer left'
-                    : 'Near monthly limit',
-                style: AppTypography.bodySm(
-                  color: member.bufferLeft > 1000
-                      ? member.accentColor
-                      : AppColors.dangerCoral,
-                ).copyWith(fontWeight: FontWeight.w600),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.arrow_downward_rounded,
+                    size: 14,
+                    color: AppColors.primaryFixed,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Benefited: ${CurrencyFormatter.formatInr(member.totalBenefited)}',
+                    style: AppTypography.bodySm(
+                      color: AppColors.primaryFixed,
+                    ).copyWith(fontWeight: FontWeight.w600, fontSize: 12),
+                  ),
+                ],
               ),
             ],
           ),
