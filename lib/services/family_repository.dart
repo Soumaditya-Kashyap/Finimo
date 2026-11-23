@@ -15,6 +15,7 @@ abstract class FamilyRepository {
     required String relationType,
     String? avatarUrl,
   });
+  Future<void> deleteFamilyMember(String memberId);
   Future<Map<String, dynamic>> createInvitation({
     required String role,
     String? invitedEmail,
@@ -108,6 +109,9 @@ class MockFamilyRepository implements FamilyRepository {
       status: 'DEPENDENT',
     );
   }
+
+  @override
+  Future<void> deleteFamilyMember(String memberId) async {}
 
   @override
   Future<Map<String, dynamic>> createInvitation({

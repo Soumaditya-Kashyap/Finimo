@@ -94,6 +94,14 @@ class HttpFamilyRepository implements FamilyRepository {
   }
 
   @override
+  Future<void> deleteFamilyMember(String memberId) async {
+    await apiClient.delete(
+      ApiConfig.familyMemberById(memberId),
+      requiresAuth: true,
+    );
+  }
+
+  @override
   Future<Map<String, dynamic>> createInvitation({
     required String role,
     String? invitedEmail,

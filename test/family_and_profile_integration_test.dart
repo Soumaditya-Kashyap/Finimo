@@ -169,6 +169,38 @@ void main() {
       expect(member.status, 'DEPENDENT');
     });
 
+    test('deleteFamilyMember calls DELETE /api/v1/family/members/{id}', () async {
+      FlutterSecureStorage.setMockInitialValues({});
+      final tokenStorage = TokenStorage();
+      await tokenStorage.saveTokens(
+        accessToken: 'mock_jwt_token',
+        refreshToken: 'mock_refresh_token',
+      );
+
+      var deleteCalled = false;
+      var deletedId = '';
+      final mockClient = MockClient((request) async {
+        if (request.method == 'DELETE' &&
+            request.url.path.contains('/api/v1/family/members/')) {
+          deleteCalled = true;
+          deletedId = request.url.pathSegments.last;
+          return http.Response('', 204);
+        }
+        return http.Response('Not Found', 404);
+      });
+
+      final apiClient = ApiClient(
+        tokenStorage: tokenStorage,
+        httpClient: mockClient,
+      );
+      final repo = HttpFamilyRepository(apiClient: apiClient);
+
+      await repo.deleteFamilyMember('test_member_id_999');
+
+      expect(deleteCalled, isTrue);
+      expect(deletedId, 'test_member_id_999');
+    });
+
     test('changePassword calls auth/change-password and clears storage', () async {
       FlutterSecureStorage.setMockInitialValues({});
       final tokenStorage = TokenStorage();

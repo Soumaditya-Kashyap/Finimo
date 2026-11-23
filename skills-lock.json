@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "antislop-design": {
+      "source": "Vanszs/AntiSlopUI",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "76bed3aeafced2512eaac8f3119393f403248ddaea0231300dfc04cf95abf399"
+    }
+  }
+}

@@ -26,69 +26,34 @@ class ProfileHeaderCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top Row: Avatar with neon ring + Name/Email/Role
+          // Top Row: Clean Architectural Avatar + Name/Email/Role
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Avatar circle with neon outer halo and status dot
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Container(
-                    width: 68,
-                    height: 68,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: const Color(0xFF1B1B22),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primaryFixed.withValues(alpha: 0.18),
-                          blurRadius: 18,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                      border: Border.all(
-                        color: const Color(0xFF282834),
-                        width: 1.5,
-                      ),
-                    ),
-                    child: Center(
-                      child: Text(
-                        profile.initials,
-                        style: AppTypography.headlineSm(
-                          color: AppColors.primaryFixed,
-                          fontWeight: FontWeight.w700,
-                        ).copyWith(
-                          fontSize: 22,
-                          letterSpacing: 1,
-                        ),
-                      ),
+              // Clean Avatar circle (no tacky AI-slop fuzzy halo, no awkward floating dot)
+              Container(
+                width: 62,
+                height: 62,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.surface02,
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    width: 1.5,
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    profile.initials,
+                    style: const TextStyle(
+                      fontFamily: 'SpaceGrotesk',
+                      color: AppColors.primaryFixed,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 20,
+                      letterSpacing: 0.5,
                     ),
                   ),
-                  // Green online indicator dot on the bottom right
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      width: 15,
-                      height: 15,
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryFixed,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: AppColors.surface01,
-                          width: 2.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primaryFixed.withValues(alpha: 0.8),
-                            blurRadius: 6,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
               const SizedBox(width: 16),
 
@@ -105,7 +70,7 @@ class ProfileHeaderCard extends StatelessWidget {
                             style: AppTypography.headlineSm(
                               color: AppColors.textPrimary,
                               fontWeight: FontWeight.w700,
-                            ).copyWith(fontSize: 19),
+                            ).copyWith(fontSize: 18),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -148,27 +113,29 @@ class ProfileHeaderCard extends StatelessWidget {
                     Row(
                       children: [
                         const Icon(
-                          Icons.verified_outlined,
+                          Icons.verified_user_outlined,
                           size: 13,
                           color: AppColors.primaryFixed,
                         ),
                         const SizedBox(width: 5),
                         Text(
-                          'Verified Identity',
+                          'Primary Account Owner',
                           style: AppTypography.bodySm(
-                            color: const Color(0xFFD4E3A0),
+                            color: AppColors.primaryFixed,
                           ).copyWith(
                             fontSize: 11,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '· FINIMO ID ${profile.finimoId}',
-                          style: AppTypography.bodySm(
-                            color: AppColors.textMuted,
-                          ).copyWith(fontSize: 11),
-                        ),
+                        if (profile.finimoId.isNotEmpty) ...[
+                          const SizedBox(width: 6),
+                          Text(
+                            '· ID ${profile.finimoId}',
+                            style: AppTypography.caption(
+                              color: AppColors.textMuted,
+                            ).copyWith(fontSize: 11),
+                          ),
+                        ],
                       ],
                     ),
                   ],
@@ -210,17 +177,11 @@ class ProfileHeaderCard extends StatelessWidget {
                       Row(
                         children: [
                           Container(
-                            width: 7,
-                            height: 7,
-                            decoration: BoxDecoration(
+                            width: 6,
+                            height: 6,
+                            decoration: const BoxDecoration(
                               color: AppColors.primaryFixed,
                               shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.primaryFixed.withValues(alpha: 0.8),
-                                  blurRadius: 6,
-                                ),
-                              ],
                             ),
                           ),
                           const SizedBox(width: 6),

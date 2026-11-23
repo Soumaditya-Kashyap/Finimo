@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/api_client.dart';
 import '../core/token_storage.dart';
+import '../models/family_member.dart';
 import '../models/user_profile_data.dart';
 import '../services/auth_repository.dart';
 import '../services/family_repository.dart';
@@ -171,6 +172,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                               _showEditCurrencyTimezoneSheet(context, profile),
                           onAddMemberTap: () =>
                               _showAddFamilyMemberSheet(context, profile),
+                          onViewMembersTap: () =>
+                              _showFamilyMembersSheet(context, profile),
                         ),
 
                         const SizedBox(height: 24),
@@ -1052,6 +1055,517 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                   ],
                 ),
               ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // ==========================================
+  // ACTION: VIEW & MANAGE FAMILY MEMBERS
+  // ==========================================
+  void _showFamilyMembersSheet(
+      BuildContext context, UserProfileData profile) {
+    Future<List<FamilyMember>> futureMembers =
+        _familyRepo.getFamilyMembers();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF101014),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.paddingOf(ctx).bottom + 20,
+              ),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.sizeOf(context).height * 0.75,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    // Header Row with Title + Add Button
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Family Circle Members',
+                              style: AppTypography.headlineSm(
+                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.w700,
+                              ).copyWith(fontSize: 18),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              'Manage household access & dependents',
+                              style: AppTypography.caption(
+                                color: AppColors.textMuted,
+                              ).copyWith(fontSize: 12),
+                            ),
+                          ],
+                        ),
+                        InkWell(
+                          onTap: () {
+                            Navigator.of(ctx).pop();
+                            _showAddFamilyMemberSheet(context, profile);
+                          },
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryFixed.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: AppColors.primaryFixed.withValues(alpha: 0.25),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.add_rounded,
+                                  size: 15,
+                                  color: AppColors.primaryFixed,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Add Member',
+                                  style: AppTypography.caption(
+                                    color: AppColors.primaryFixed,
+                                  ).copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+
+                    // Members List
+                    Flexible(
+                      child: FutureBuilder<List<FamilyMember>>(
+                        future: futureMembers,
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(32),
+                                child: CircularProgressIndicator(
+                                  color: AppColors.primaryFixed,
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            );
+                          }
+
+                          if (snapshot.hasError) {
+                            return Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(24),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'Failed to load members',
+                                      style: AppTypography.bodySm(
+                                        color: AppColors.dangerCoral,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    TextButton(
+                                      onPressed: () {
+                                        setSheetState(() {
+                                          futureMembers =
+                                              _familyRepo.getFamilyMembers();
+                                        });
+                                      },
+                                      child: const Text('Retry'),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }
+
+                          final members = snapshot.data ?? [];
+                          if (members.isEmpty) {
+                            return Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(32),
+                                child: Text(
+                                  'No family members found.',
+                                  style: AppTypography.bodyMd(
+                                    color: AppColors.textMuted,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+
+                          return ListView.separated(
+                            shrinkWrap: true,
+                            itemCount: members.length,
+                            separatorBuilder: (context, index) =>
+                                const SizedBox(height: 10),
+                            itemBuilder: (context, index) {
+                              final member = members[index];
+                              final isOwnerOrAdmin =
+                                  member.role == 'OWNER' ||
+                                  member.role == 'ADMIN' ||
+                                  member.relationType == MemberRelation.self ||
+                                  member.relationType == MemberRelation.admin;
+
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 12,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.surface02,
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.05),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    // Avatar circle
+                                    Container(
+                                      width: 42,
+                                      height: 42,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: AppColors.surface03,
+                                        border: Border.all(
+                                          color: isOwnerOrAdmin
+                                              ? AppColors.primaryFixed
+                                                  .withValues(alpha: 0.3)
+                                              : Colors.white
+                                                  .withValues(alpha: 0.08),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          member.initial,
+                                          style: TextStyle(
+                                            fontFamily: 'SpaceGrotesk',
+                                            color: isOwnerOrAdmin
+                                                ? AppColors.primaryFixed
+                                                : AppColors.textPrimary,
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+
+                                    // Name + Relation/Role Badges
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            member.name,
+                                            style: AppTypography.headlineSm(
+                                              color: AppColors.textPrimary,
+                                              fontWeight: FontWeight.w600,
+                                            ).copyWith(fontSize: 15),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              if (isOwnerOrAdmin)
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(
+                                                    horizontal: 7,
+                                                    vertical: 2,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color: const Color(0xFF0F3035),
+                                                    borderRadius:
+                                                        BorderRadius.circular(6),
+                                                    border: Border.all(
+                                                      color: AppColors
+                                                          .tertiaryFixedDim
+                                                          .withValues(alpha: 0.3),
+                                                      width: 0.8,
+                                                    ),
+                                                  ),
+                                                  child: const Text(
+                                                    'Owner / Admin',
+                                                    style: TextStyle(
+                                                      fontFamily: 'SpaceGrotesk',
+                                                      color: AppColors.tertiaryFixed,
+                                                      fontSize: 10,
+                                                      fontWeight: FontWeight.w700,
+                                                    ),
+                                                  ),
+                                                )
+                                              else
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(
+                                                    horizontal: 7,
+                                                    vertical: 2,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.white
+                                                        .withValues(alpha: 0.06),
+                                                    borderRadius:
+                                                        BorderRadius.circular(6),
+                                                    border: Border.all(
+                                                      color: Colors.white
+                                                          .withValues(alpha: 0.08),
+                                                      width: 0.8,
+                                                    ),
+                                                  ),
+                                                  child: Text(
+                                                    member.relationType.name
+                                                        .toUpperCase(),
+                                                    style: AppTypography.caption(
+                                                      color: AppColors.textMuted,
+                                                    ).copyWith(
+                                                      fontSize: 10,
+                                                      fontWeight: FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                ),
+                                              if (member.status != null &&
+                                                  member.status!.isNotEmpty) ...[
+                                                const SizedBox(width: 6),
+                                                Text(
+                                                  '· ${member.status}',
+                                                  style: AppTypography.caption(
+                                                    color: AppColors.textMuted,
+                                                  ).copyWith(fontSize: 10),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+
+                                    // Action / Status: Delete button or Protected tag
+                                    if (isOwnerOrAdmin)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withValues(alpha: 0.04),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: const [
+                                            Icon(
+                                              Icons.shield_outlined,
+                                              size: 13,
+                                              color: AppColors.textMuted,
+                                            ),
+                                            SizedBox(width: 4),
+                                            Text(
+                                              'Primary',
+                                              style: TextStyle(
+                                                fontFamily: 'SpaceGrotesk',
+                                                color: AppColors.textMuted,
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      )
+                                    else
+                                      IconButton(
+                                        tooltip: 'Remove from Family',
+                                        icon: const Icon(
+                                          Icons.delete_outline_rounded,
+                                          size: 19,
+                                          color: AppColors.dangerCoral,
+                                        ),
+                                        onPressed: () => _confirmDeleteMember(
+                                          context,
+                                          member,
+                                          () {
+                                            setSheetState(() {
+                                              futureMembers = _familyRepo
+                                                  .getFamilyMembers();
+                                            });
+                                            _loadProfile();
+                                          },
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _confirmDeleteMember(
+    BuildContext context,
+    FamilyMember member,
+    VoidCallback onDeleted,
+  ) {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        bool isDeleting = false;
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: const Color(0xFF141419),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(
+                  color: Colors.white.withValues(alpha: 0.08),
+                ),
+              ),
+              title: Row(
+                children: [
+                  const Icon(
+                    Icons.person_remove_outlined,
+                    color: AppColors.dangerCoral,
+                    size: 22,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Remove ${member.name}?',
+                      style: AppTypography.headlineSm(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                      ).copyWith(fontSize: 16),
+                    ),
+                  ),
+                ],
+              ),
+              content: Text(
+                'Are you sure you want to remove ${member.name} from the family circle? Their historical transactions and ledger records will be preserved.',
+                style: AppTypography.bodySm(color: AppColors.textMuted).copyWith(
+                  height: 1.4,
+                  fontSize: 13,
+                ),
+              ),
+              actionsPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              actions: [
+                TextButton(
+                  onPressed:
+                      isDeleting ? null : () => Navigator.of(dialogCtx).pop(),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(
+                      color: AppColors.textMuted,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: isDeleting
+                      ? null
+                      : () async {
+                          setDialogState(() => isDeleting = true);
+                          try {
+                            await _familyRepo.deleteFamilyMember(member.id);
+                            if (dialogCtx.mounted) {
+                              Navigator.of(dialogCtx).pop();
+                            }
+                            onDeleted();
+                            _showNotification(
+                              '${member.name} removed from family',
+                            );
+                          } on ApiException catch (e) {
+                            setDialogState(() => isDeleting = false);
+                            _showNotification(e.message, isError: true);
+                          } catch (e) {
+                            setDialogState(() => isDeleting = false);
+                            _showNotification(
+                              'Failed to remove member: ${e.toString()}',
+                              isError: true,
+                            );
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.dangerCoral,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                  ),
+                  child: isDeleting
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text(
+                          'Remove Member',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                ),
+              ],
             );
           },
         );

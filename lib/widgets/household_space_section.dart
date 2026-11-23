@@ -8,6 +8,7 @@ class HouseholdSpaceSection extends StatelessWidget {
   final VoidCallback? onEditFamilyTap;
   final VoidCallback? onEditCurrencyTap;
   final VoidCallback? onAddMemberTap;
+  final VoidCallback? onViewMembersTap;
 
   const HouseholdSpaceSection({
     super.key,
@@ -15,6 +16,7 @@ class HouseholdSpaceSection extends StatelessWidget {
     this.onEditFamilyTap,
     this.onEditCurrencyTap,
     this.onAddMemberTap,
+    this.onViewMembersTap,
   });
 
   @override
@@ -114,7 +116,7 @@ class HouseholdSpaceSection extends StatelessWidget {
 
               const SizedBox(height: 10),
 
-              // 3. Access Scope Card with Single Mode tag & + Add Member button
+              // 3. Access Scope Card with Direct View & Add Member Actions
               Container(
                 decoration: BoxDecoration(
                   color: AppColors.surface02,
@@ -126,110 +128,167 @@ class HouseholdSpaceSection extends StatelessWidget {
                 padding: const EdgeInsets.all(14),
                 child: Column(
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: AppColors.surface03,
-                            borderRadius: BorderRadius.circular(10),
+                    InkWell(
+                      onTap: onViewMembersTap,
+                      borderRadius: BorderRadius.circular(10),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: AppColors.surface03,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.groups_outlined,
+                              size: 20,
+                              color: AppColors.secondary,
+                            ),
                           ),
-                          child: const Icon(
-                            Icons.groups_outlined,
-                            size: 20,
-                            color: AppColors.secondary,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'FAMILY ACCESS',
-                                style: AppTypography.caption(
-                                  color: AppColors.textMuted,
-                                ).copyWith(
-                                  fontSize: 10,
-                                  letterSpacing: 1.0,
-                                  fontWeight: FontWeight.w600,
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'FAMILY ACCESS',
+                                  style: AppTypography.caption(
+                                    color: AppColors.textMuted,
+                                  ).copyWith(
+                                    fontSize: 10,
+                                    letterSpacing: 1.0,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 3),
-                              Text(
-                                profile.accessScope,
-                                style: AppTypography.headlineSm(
-                                  color: AppColors.textPrimary,
-                                  fontWeight: FontWeight.w700,
-                                ).copyWith(fontSize: 16),
-                              ),
-                            ],
-                          ),
-                        ),
-                        // Role / Scope Tag
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 9,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.05),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.08),
+                                const SizedBox(height: 3),
+                                Text(
+                                  profile.accessScope,
+                                  style: AppTypography.headlineSm(
+                                    color: AppColors.textPrimary,
+                                    fontWeight: FontWeight.w700,
+                                  ).copyWith(fontSize: 16),
+                                ),
+                              ],
                             ),
                           ),
-                          child: Text(
-                            profile.accessScopeBadge,
-                            style: AppTypography.caption(
-                              color: AppColors.textMuted,
-                            ).copyWith(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
+                          // Role / Scope Tag
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 9,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.08),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  profile.accessScopeBadge,
+                                  style: AppTypography.caption(
+                                    color: AppColors.textMuted,
+                                  ).copyWith(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                const Icon(
+                                  Icons.chevron_right_rounded,
+                                  size: 14,
+                                  color: AppColors.textMuted,
+                                ),
+                              ],
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
 
                     const SizedBox(height: 12),
 
-                    // + Add Family Member Button
-                    GestureDetector(
-                      onTap: onAddMemberTap,
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0F2B2E),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: AppColors.tertiaryFixedDim.withValues(alpha: 0.25),
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.person_add_alt_outlined,
-                              size: 16,
-                              color: AppColors.tertiaryFixed,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '+ Add Family Member',
-                              style: AppTypography.bodySm(
-                                color: AppColors.tertiaryFixed,
-                              ).copyWith(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
+                    // Two Balanced Actions: [View Members] & [+ Add Member]
+                    Row(
+                      children: [
+                        Expanded(
+                          child: InkWell(
+                            onTap: onViewMembersTap,
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                color: AppColors.surface03,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.06),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(
+                                    Icons.people_outline_rounded,
+                                    size: 15,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'View Members',
+                                    style: AppTypography.bodySm(
+                                      color: AppColors.textPrimary,
+                                    ).copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: InkWell(
+                            onTap: onAddMemberTap,
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF0F2B2E),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: AppColors.tertiaryFixedDim.withValues(alpha: 0.25),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(
+                                    Icons.person_add_alt_outlined,
+                                    size: 15,
+                                    color: AppColors.tertiaryFixed,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    '+ Add Member',
+                                    style: AppTypography.bodySm(
+                                      color: AppColors.tertiaryFixed,
+                                    ).copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
