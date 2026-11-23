@@ -1,3 +1,5 @@
+import '../core/app_version.dart';
+
 class UserProfileData {
   final String fullName;
   final String email;
@@ -66,8 +68,8 @@ class UserProfileData {
       accessScopeBadge: json['accessScopeBadge'] as String? ?? 'Primary Admin',
       biometricSecurityEnabled:
           json['biometricSecurityEnabled'] as bool? ?? true,
-      appVersion: json['appVersion'] as String? ?? 'FINIMO v1.0.0',
-      appPhase: json['appPhase'] as String? ?? '(Phase 1 MVP)',
+      appVersion: json['appVersion'] as String? ?? AppVersion.displayVersion,
+      appPhase: json['appPhase'] as String? ?? '(${AppVersion.appPhase})',
       userId: json['userId'] as String?,
       familyId: json['familyId'] as String?,
       memberId: json['memberId'] as String?,
@@ -153,8 +155,8 @@ class UserProfileData {
       accessScope: accessScope,
       accessScopeBadge: accessScopeBadge,
       biometricSecurityEnabled: true,
-      appVersion: 'FINIMO v1.0.0',
-      appPhase: '(Phase 1 MVP)',
+      appVersion: AppVersion.displayVersion,
+      appPhase: '(${AppVersion.appPhase})',
       userId: user['id']?.toString(),
       familyId: (family['id'] ?? json['family_id'])?.toString(),
       memberId: (member['id'] ?? json['member_id'])?.toString(),

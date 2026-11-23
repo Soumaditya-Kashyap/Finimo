@@ -1,5 +1,6 @@
 import '../core/api_client.dart';
 import '../core/api_config.dart';
+import '../core/app_version.dart';
 import '../core/token_storage.dart';
 import '../models/user_profile_data.dart';
 import 'auth_repository.dart';
@@ -65,8 +66,8 @@ class HttpAuthRepository implements AuthRepository {
           accessScope: 'Family',
           accessScopeBadge: 'Active Member',
           biometricSecurityEnabled: true,
-          appVersion: 'FINIMO v1.0.0',
-          appPhase: '(Phase 1 MVP)',
+          appVersion: AppVersion.displayVersion,
+          appPhase: '(${AppVersion.appPhase})',
         );
       }
     } catch (_) {

@@ -1,3 +1,4 @@
+import '../core/app_version.dart';
 import '../models/user_profile_data.dart';
 export 'http_auth_repository.dart';
 
@@ -47,8 +48,8 @@ class MockAuthRepository implements AuthRepository {
       accessScope: '1 Member',
       accessScopeBadge: 'Primary Admin',
       biometricSecurityEnabled: true,
-      appVersion: 'FINIMO v1.0.0',
-      appPhase: '(Phase 1 MVP)',
+      appVersion: AppVersion.displayVersion,
+      appPhase: '(${AppVersion.appPhase})',
     );
   }
 
@@ -77,8 +78,8 @@ class MockAuthRepository implements AuthRepository {
       accessScope: '1 Member',
       accessScopeBadge: 'Primary Admin',
       biometricSecurityEnabled: true,
-      appVersion: 'FINIMO v1.0.0',
-      appPhase: '(Phase 1 MVP)',
+      appVersion: AppVersion.displayVersion,
+      appPhase: '(${AppVersion.appPhase})',
     );
   }
 
@@ -103,8 +104,8 @@ class MockAuthRepository implements AuthRepository {
       accessScope: '1 Member',
       accessScopeBadge: 'Primary Admin',
       biometricSecurityEnabled: true,
-      appVersion: 'FINIMO v1.0.0',
-      appPhase: '(Phase 1 MVP)',
+      appVersion: AppVersion.displayVersion,
+      appPhase: '(${AppVersion.appPhase})',
     );
   }
 

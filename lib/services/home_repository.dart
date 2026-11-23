@@ -12,6 +12,7 @@ import '../models/deep_dive_models.dart';
 import '../models/user_profile_data.dart';
 import '../models/conjoined_event_detail.dart';
 import '../models/insurance_policy_model.dart';
+import '../core/app_version.dart';
 import '../core/token_storage.dart';
 import 'package:flutter/material.dart';
 
@@ -410,8 +411,8 @@ class MockHomeRepository implements HomeRepository {
       accessScope: '1 Member',
       accessScopeBadge: 'Primary Admin',
       biometricSecurityEnabled: true,
-      appVersion: 'FINIMO v1.0.0',
-      appPhase: '(Phase 1 MVP)',
+      appVersion: AppVersion.displayVersion,
+      appPhase: '(${AppVersion.appPhase})',
     );
   }
 

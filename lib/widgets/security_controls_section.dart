@@ -238,7 +238,7 @@ class SecurityControlsSection extends StatelessWidget {
                         ],
                       ),
                     ),
-                    // FINIMO v1.0.0 (Phase 1 MVP) Pill Tag
+                    // App Version Pill Tag
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 10,
