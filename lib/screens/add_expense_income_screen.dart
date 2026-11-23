@@ -15,7 +15,6 @@ import '../widgets/amount_keypad_display.dart';
 import '../widgets/beneficiary_chip_selector.dart';
 import '../widgets/category_selector_grid.dart';
 import '../widgets/conjoined_event_tag_card.dart';
-import '../widgets/numeric_keypad_grid.dart';
 import '../widgets/paid_by_payer_selector.dart';
 import '../widgets/transaction_type_switch.dart';
 
@@ -86,11 +85,11 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
   late final EventRepository _eventRepo;
 
   late TransactionType _selectedType;
-  String _rawAmount = '0.00';
+  late final TextEditingController _amountController;
+  late final FocusNode _amountFocusNode;
   String? _selectedPayerId;
   String? _selectedBeneficiaryMemberId; // null means 'Entire Family'
   String _selectedCategoryId = '';
-  bool _isTaggedToEvent = false;
   bool _isSubmitting = false;
 
   final TextEditingController _titleController = TextEditingController();
@@ -112,9 +111,8 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
     _selectedType = widget.isEventExpenseOnly
         ? TransactionType.expense
         : widget.initialType;
-    if (widget.isEventExpenseOnly) {
-      _isTaggedToEvent = true;
-    }
+    _amountController = TextEditingController();
+    _amountFocusNode = FocusNode();
     _familyRepo = widget.familyRepository ?? HttpFamilyRepository();
     _categoryRepo = widget.categoryRepository ?? HttpCategoryRepository();
     _transactionRepo =
@@ -125,6 +123,12 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
 
     _scrollController.addListener(_onScroll);
     _depsFuture = _loadInitialDependencies();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _amountFocusNode.requestFocus();
+      }
+    });
   }
 
   Future<_AddScreenDependencies> _loadInitialDependencies() async {
@@ -209,6 +213,8 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
 
   @override
   void dispose() {
+    _amountController.dispose();
+    _amountFocusNode.dispose();
     _titleController.dispose();
     _notesController.dispose();
     _scrollController.removeListener(_onScroll);
@@ -224,51 +230,25 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
     }
   }
 
-  void _handleKeyPress(String key) {
-    setState(() {
-      if (key == '.') {
-        if (!_rawAmount.contains('.')) {
-          _rawAmount += '.';
-        }
-      } else {
-        if (_rawAmount == '0.00' || _rawAmount == '0') {
-          _rawAmount = key;
-        } else {
-          if (_rawAmount.contains('.')) {
-            final decimals = _rawAmount.split('.')[1];
-            if (decimals.length >= 2) return;
-          }
-          if (_rawAmount.length < 9) {
-            _rawAmount += key;
-          }
-        }
-      }
-    });
-  }
-
-  void _handleBackspace() {
-    setState(() {
-      if (_rawAmount.length > 1) {
-        _rawAmount = _rawAmount.substring(0, _rawAmount.length - 1);
-      } else {
-        _rawAmount = '0.00';
-      }
-    });
-  }
-
   void _handleClear() {
-    setState(() => _rawAmount = '0.00');
+    _amountController.clear();
+    setState(() {});
   }
 
   void _handlePresetAdd(double val) {
-    final cur = double.tryParse(_rawAmount) ?? 0.0;
-    setState(() {
-      _rawAmount = (cur + val).toStringAsFixed(2);
-    });
+    final cur = double.tryParse(_amountController.text.trim()) ?? 0.0;
+    final next = cur + val;
+    final formatted =
+        (next % 1 == 0) ? next.toInt().toString() : next.toStringAsFixed(2);
+    _amountController.text = formatted;
+    _amountController.selection = TextSelection.fromPosition(
+      TextPosition(offset: _amountController.text.length),
+    );
+    setState(() {});
   }
 
   Future<void> _recordTransaction() async {
-    final amount = double.tryParse(_rawAmount) ?? 0.0;
+    final amount = double.tryParse(_amountController.text.trim()) ?? 0.0;
     if (amount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -354,12 +334,11 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
               : null;
 
       final candidateEventId = _selectedEvent?.id ?? widget.initialEventId;
-      final eventId = isExpense
-          ? ((widget.isEventExpenseOnly || _isTaggedToEvent) &&
-                  candidateEventId != null &&
-                  uuidRegex.hasMatch(candidateEventId)
-              ? candidateEventId
-              : null)
+      final eventId = isExpense &&
+              widget.isEventExpenseOnly &&
+              candidateEventId != null &&
+              uuidRegex.hasMatch(candidateEventId)
+          ? candidateEventId
           : null;
 
       await _transactionRepo.createTransaction(
@@ -428,6 +407,7 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
     final mediaQuery = MediaQuery.of(context);
     final topPadding = mediaQuery.padding.top;
     final topOffset = topPadding + 36.0;
+    final bottomInset = mediaQuery.viewInsets.bottom;
 
     final isExpense = _selectedType == TransactionType.expense;
     final accentColor = widget.isEventExpenseOnly
@@ -435,7 +415,7 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
         : (isExpense ? AppColors.primaryFixed : AppColors.tertiaryFixed);
 
     return Padding(
-      padding: EdgeInsets.only(top: topOffset),
+      padding: EdgeInsets.only(top: topOffset, bottom: bottomInset),
       child: Container(
         decoration: const BoxDecoration(
           color: AppColors.canvasBase,
@@ -565,9 +545,11 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
 
                             // 2. Transaction Value Display & Quick Presets
                             AmountKeypadDisplay(
-                              rawAmount: _rawAmount,
+                              controller: _amountController,
+                              focusNode: _amountFocusNode,
                               onPresetAdd: _handlePresetAdd,
                               onClear: _handleClear,
+                              onChanged: (_) => setState(() {}),
                             ),
 
                             const SizedBox(height: 14),
@@ -651,34 +633,23 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
                               activeColor: accentColor,
                             ),
 
-                            // 6. Conjoined Event Tag Card (Shared Pot)
-                            if (isExpense && (deps.events.isNotEmpty || widget.isEventExpenseOnly)) ...[
+                            // 6. Conjoined Event Tag Card (Only for Event Expense mode)
+                            if (widget.isEventExpenseOnly && deps.events.isNotEmpty) ...[
                               const SizedBox(height: 16),
                               ConjoinedEventTagCard(
                                 events: deps.events,
                                 selectedEvent: _selectedEvent ?? deps.events.firstOrNull,
-                                isTagged: widget.isEventExpenseOnly ? true : _isTaggedToEvent,
-                                isMandatory: widget.isEventExpenseOnly,
-                                onToggle: widget.isEventExpenseOnly
-                                    ? null
-                                    : (val) =>
-                                        setState(() => _isTaggedToEvent = val),
+                                isTagged: true,
+                                isMandatory: true,
+                                onToggle: null,
                                 onEventSelected: (ev) =>
                                     setState(() => _selectedEvent = ev),
                               ),
                             ],
 
-                            const SizedBox(height: 16),
-
-                            // 7. Numeric Keypad
-                            NumericKeypadGrid(
-                              onKeyPress: _handleKeyPress,
-                              onBackspace: _handleBackspace,
-                            ),
-
                             const SizedBox(height: 20),
 
-                            // 8. Record Transaction Primary Action Button
+                            // 7. Record Transaction Primary Action Button
                             InkWell(
                               onTap: _isSubmitting ? null : _recordTransaction,
                               borderRadius: BorderRadius.circular(16),
@@ -799,7 +770,7 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
-                                      '₹$_rawAmount',
+                                      '₹${_amountController.text.trim().isEmpty ? '0.00' : _amountController.text.trim()}',
                                       style: AppTypography.headlineSm(
                                         color: AppColors.textPrimary,
                                         fontWeight: FontWeight.w700,

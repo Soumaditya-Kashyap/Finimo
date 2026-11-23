@@ -362,16 +362,12 @@ void main() {
       expect(find.text('Paid By'), findsOneWidget);
       expect(find.text('Spent For (Whom?)'), findsOneWidget);
 
-      // Tap numeric keypad '2', '5', '0'
-      await tester.tap(find.text('2'));
-      await tester.pump();
-      await tester.tap(find.text('5'));
-      await tester.pump();
-      await tester.tap(find.text('0'));
-      await tester.pump();
+      // Verify event tagging card is REMOVED from normal expense add
+      expect(find.text('ISOLATED POOL'), findsNothing);
 
-      // Check amount display shows '250'
-      expect(find.text('250'), findsOneWidget);
+      // Enter amount '250' via native TextField
+      await tester.enterText(find.byType(TextField).first, '250');
+      await tester.pump();
 
       // Tap 'Record Expense' button
       await tester.tap(find.text('Record Expense'));
@@ -429,16 +425,8 @@ void main() {
       expect(find.text('Paid By'), findsNothing);
       expect(find.text('Spent For (Whom?)'), findsNothing);
 
-      // Enter 50000
-      await tester.tap(find.text('5'));
-      await tester.pump();
-      await tester.tap(find.text('0'));
-      await tester.pump();
-      await tester.tap(find.text('0'));
-      await tester.pump();
-      await tester.tap(find.text('0'));
-      await tester.pump();
-      await tester.tap(find.text('0'));
+      // Enter 50000 via native TextField
+      await tester.enterText(find.byType(TextField).first, '50000');
       await tester.pump();
 
       // Tap 'Record Income' button
@@ -502,14 +490,8 @@ void main() {
       expect(find.text('ISOLATED POOL'), findsOneWidget);
       expect(find.text('Durga Puja'), findsOneWidget);
 
-      // Enter amount 2000
-      await tester.tap(find.text('2'));
-      await tester.pump();
-      await tester.tap(find.text('0'));
-      await tester.pump();
-      await tester.tap(find.text('0'));
-      await tester.pump();
-      await tester.tap(find.text('0'));
+      // Enter amount 2000 via native TextField
+      await tester.enterText(find.byType(TextField).first, '2000');
       await tester.pump();
 
       // Tap 'Record Event Expense'
