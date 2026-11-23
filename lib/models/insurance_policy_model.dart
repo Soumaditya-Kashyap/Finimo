@@ -26,6 +26,9 @@ class InsurancePolicyModel {
   final String premiumFrequency; // 'ANNUAL' | 'MONTHLY' | 'QUARTERLY'
   final DateTime renewalDueDate;
   final PolicyStatus status;
+  final int? tenureYears; // Total policy term in years (e.g. 1, 10, 20)
+  final int? installmentsPaid; // Installments completed so far
+  final double? totalPaidAmount; // Cumulative amount paid to date
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -42,6 +45,9 @@ class InsurancePolicyModel {
     this.premiumFrequency = 'ANNUAL',
     required this.renewalDueDate,
     this.status = PolicyStatus.active,
+    this.tenureYears,
+    this.installmentsPaid,
+    this.totalPaidAmount,
     this.createdAt,
     this.updatedAt,
   });
@@ -56,6 +62,10 @@ class InsurancePolicyModel {
     );
     return due.difference(today).inDays;
   }
+
+  bool get isOverdue => daysUntilRenewal < 0;
+  bool get isExpiringSoon => daysUntilRenewal >= 0 && daysUntilRenewal <= 30;
+  int get currentYear => (installmentsPaid ?? 0) + 1;
 
   static PolicyType parseType(String? t) {
     switch (t?.toUpperCase()) {
@@ -143,6 +153,15 @@ class InsurancePolicyModel {
               DateTime.now()
           : DateTime.now(),
       status: parseStatus(json['status']?.toString()),
+      tenureYears: json['tenure_years'] != null
+          ? int.tryParse(json['tenure_years'].toString())
+          : null,
+      installmentsPaid: json['installments_paid'] != null
+          ? int.tryParse(json['installments_paid'].toString())
+          : null,
+      totalPaidAmount: json['total_paid'] != null
+          ? _parseDouble(json['total_paid'])
+          : null,
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'].toString())
           : null,
@@ -169,6 +188,9 @@ class InsurancePolicyModel {
       'premium_frequency': premiumFrequency,
       'renewal_due_date': renewalDueDate.toIso8601String().split('T').first,
       'status': toApiStatus(status),
+      if (tenureYears != null) 'tenure_years': tenureYears,
+      if (installmentsPaid != null) 'installments_paid': installmentsPaid,
+      if (totalPaidAmount != null) 'total_paid': totalPaidAmount,
     };
   }
 }

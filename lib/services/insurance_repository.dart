@@ -52,6 +52,27 @@ class MockInsuranceRepository implements InsuranceRepository {
   @override
   Future<InsurancePolicyModel> updatePolicy(
       String policyId, Map<String, dynamic> patch) async {
-    throw UnimplementedError();
+    final pol = InsurancePolicyModel(
+      id: policyId,
+      familyId: 'mock_family_1',
+      insuredMemberId: patch['insured_member_id']?.toString() ?? 'm1',
+      insuredMemberName: 'Family Member',
+      policyName: patch['policy_name']?.toString() ?? 'Updated Policy',
+      policyType: InsurancePolicyModel.parseType(patch['policy_type']?.toString()),
+      policyNumber: patch['policy_number']?.toString(),
+      sumAssured: patch['sum_assured'] != null
+          ? (patch['sum_assured'] as num).toDouble()
+          : 1000000.0,
+      premiumAmount: patch['premium_amount'] != null
+          ? (patch['premium_amount'] as num).toDouble()
+          : 15000.0,
+      premiumFrequency: patch['premium_frequency']?.toString() ?? 'ANNUAL',
+      renewalDueDate: patch['renewal_due_date'] != null
+          ? DateTime.tryParse(patch['renewal_due_date'].toString()) ??
+              DateTime.now().add(const Duration(days: 365))
+          : DateTime.now().add(const Duration(days: 365)),
+      status: InsurancePolicyModel.parseStatus(patch['status']?.toString()),
+    );
+    return pol;
   }
 }

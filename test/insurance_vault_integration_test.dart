@@ -6,6 +6,8 @@ import 'package:finimo/screens/insurance_vault_screen.dart';
 import 'package:finimo/services/family_repository.dart';
 import 'package:finimo/services/home_repository.dart';
 import 'package:finimo/services/insurance_repository.dart';
+import 'package:finimo/services/transaction_repository.dart';
+import 'package:finimo/services/category_repository.dart';
 
 class _FakeHomeRepo extends MockHomeRepository {}
 
@@ -34,6 +36,9 @@ class _TestInsuranceRepo implements InsuranceRepository {
   bool deleteCalled = false;
   String? lastDeletedId;
   CreateInsuranceRequest? lastCreatedRequest;
+  bool updateCalled = false;
+  String? lastUpdatedId;
+  Map<String, dynamic>? lastPatch;
 
   _TestInsuranceRepo({required this.overview});
 
@@ -72,7 +77,26 @@ class _TestInsuranceRepo implements InsuranceRepository {
   @override
   Future<InsurancePolicyModel> updatePolicy(
       String policyId, Map<String, dynamic> patch) async {
-    throw UnimplementedError();
+    updateCalled = true;
+    lastUpdatedId = policyId;
+    lastPatch = patch;
+    final updated = InsurancePolicyModel(
+      id: policyId,
+      familyId: 'fam_1',
+      insuredMemberId: 'm1',
+      insuredMemberName: 'Arjun Mehta',
+      policyName: 'HDFC Click 2 Protect',
+      policyType: PolicyType.termLife,
+      sumAssured: 10000000.0,
+      premiumAmount: patch['premium_amount'] != null
+          ? (patch['premium_amount'] as num).toDouble()
+          : 18000.0,
+      renewalDueDate: patch['renewal_due_date'] != null
+          ? DateTime.parse(patch['renewal_due_date'].toString())
+          : DateTime.now().add(const Duration(days: 365)),
+      status: InsurancePolicyModel.parseStatus(patch['status']?.toString()),
+    );
+    return updated;
   }
 }
 
@@ -271,6 +295,8 @@ void main() {
             repository: _FakeHomeRepo(),
             insuranceRepository: insuranceRepo,
             familyRepository: _TestFamilyRepo(),
+            transactionRepository: MockTransactionRepository(),
+            categoryRepository: MockCategoryRepository(),
           ),
         ),
       );
@@ -302,6 +328,8 @@ void main() {
             repository: _FakeHomeRepo(),
             insuranceRepository: insuranceRepo,
             familyRepository: _TestFamilyRepo(),
+            transactionRepository: MockTransactionRepository(),
+            categoryRepository: MockCategoryRepository(),
           ),
         ),
       );
@@ -315,6 +343,77 @@ void main() {
       expect(find.text('REGISTER POLICY'), findsOneWidget);
       expect(find.text('Add Family Insurance'), findsOneWidget);
       expect(find.text('Save & Register Policy'), findsOneWidget);
+    });
+
+    testWidgets('Tapping Record Payment opens payment sheet and records renewal',
+        (tester) async {
+      final testPolicy = InsurancePolicyModel(
+        id: 'pol_term_1',
+        familyId: 'fam_1',
+        insuredMemberId: 'm1',
+        insuredMemberName: 'Arjun Mehta',
+        policyName: 'HDFC Click 2 Protect',
+        policyType: PolicyType.termLife,
+        sumAssured: 10000000.0,
+        premiumAmount: 18000.0,
+        premiumFrequency: 'ANNUAL',
+        renewalDueDate: DateTime.now().add(const Duration(days: 15)), // Expiring soon
+        status: PolicyStatus.active,
+      );
+
+      final testOverview = InsuranceVaultOverview(
+        totalSumAssuredUmbrella: 10000000.0,
+        formattedUmbrellaText: '₹1.00 Cr',
+        coveredFamilyMembersCount: 1,
+        annualCostTotal: 18000.0,
+        monthlyCostEquivalent: 1500.0,
+        nextCycleText: "Dec '26",
+        nextCycleStatus: 'Action Required',
+        policies: [testPolicy],
+      );
+
+      final insuranceRepo = _TestInsuranceRepo(overview: testOverview);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: InsuranceVaultScreen(
+            repository: _FakeHomeRepo(),
+            insuranceRepository: insuranceRepo,
+            familyRepository: _TestFamilyRepo(),
+            transactionRepository: MockTransactionRepository(),
+            categoryRepository: MockCategoryRepository(),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Scroll to "Renew & Record Payment" button if needed and tap
+      final renewBtn = find.text('Renew & Record Payment');
+      await tester.ensureVisible(renewBtn);
+      await tester.pumpAndSettle();
+
+      expect(renewBtn, findsOneWidget);
+      await tester.tap(renewBtn);
+      await tester.pumpAndSettle();
+
+      // Verify sheet is open
+      expect(find.text('Record Premium Payment'), findsOneWidget);
+      expect(find.text('AMOUNT PAID (₹)'), findsOneWidget);
+
+      final confirmBtn = find.text('Confirm & Record Payment');
+      await tester.ensureVisible(confirmBtn);
+      await tester.pumpAndSettle();
+      expect(confirmBtn, findsOneWidget);
+
+      // Tap Confirm
+      await tester.tap(confirmBtn);
+      await tester.pumpAndSettle();
+
+      // Verify update was called on repo
+      expect(insuranceRepo.updateCalled, isTrue);
+      expect(insuranceRepo.lastUpdatedId, equals('pol_term_1'));
+      expect(insuranceRepo.lastPatch?['status'], equals('ACTIVE'));
     });
   });
 }

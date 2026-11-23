@@ -7,11 +7,13 @@ import '../utils/currency_formatter.dart';
 class InsurancePolicyCard extends StatelessWidget {
   final InsurancePolicyModel policy;
   final VoidCallback? onDeleteTap;
+  final VoidCallback? onRecordPaymentTap;
 
   const InsurancePolicyCard({
     super.key,
     required this.policy,
     this.onDeleteTap,
+    this.onRecordPaymentTap,
   });
 
   @override
@@ -48,15 +50,17 @@ class InsurancePolicyCard extends StatelessWidget {
         break;
     }
 
-    final isExpiringSoon =
-        policy.daysUntilRenewal <= 30 && policy.daysUntilRenewal >= 0;
+    final isOverdue = policy.isOverdue;
+    final isExpiringSoon = policy.isExpiringSoon;
 
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface01,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.05),
+          color: isOverdue
+              ? AppColors.dangerCoral.withValues(alpha: 0.4)
+              : Colors.white.withValues(alpha: 0.05),
           width: 1,
         ),
       ),
@@ -130,8 +134,39 @@ class InsurancePolicyCard extends StatelessWidget {
             ],
           ),
 
-          // Expiry Alert if within 30 days
-          if (isExpiringSoon) ...[
+          // Overdue / Expiry Alert Banner
+          if (isOverdue) ...[
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2E0F14),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: AppColors.dangerCoral.withValues(alpha: 0.4),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.warning_amber_rounded,
+                    size: 15,
+                    color: AppColors.dangerCoral,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'POLICY EXPIRED · Overdue by ${policy.daysUntilRenewal.abs()} days',
+                      style: AppTypography.caption(
+                        color: AppColors.dangerCoral,
+                      ).copyWith(fontSize: 11, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ] else if (isExpiringSoon) ...[
             const SizedBox(height: 10),
             Container(
               width: double.infinity,
@@ -151,11 +186,13 @@ class InsurancePolicyCard extends StatelessWidget {
                     color: AppColors.dangerCoral,
                   ),
                   const SizedBox(width: 6),
-                  Text(
-                    'Renewal Action Required · Expiry in ${policy.daysUntilRenewal} days',
-                    style: AppTypography.caption(
-                      color: AppColors.dangerCoral,
-                    ).copyWith(fontSize: 11, fontWeight: FontWeight.w600),
+                  Expanded(
+                    child: Text(
+                      'Renewal Action Required · Expiry in ${policy.daysUntilRenewal} days',
+                      style: AppTypography.caption(
+                        color: AppColors.dangerCoral,
+                      ).copyWith(fontSize: 11, fontWeight: FontWeight.w600),
+                    ),
                   ),
                 ],
               ),
@@ -215,6 +252,41 @@ class InsurancePolicyCard extends StatelessWidget {
             ],
           ),
 
+          // Optional Tenure & Installment Tracker (if tenure > 1 year)
+          if (policy.tenureYears != null && policy.tenureYears! > 1) ...[
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Tenure: Year ${policy.currentYear} of ${policy.tenureYears}',
+                  style: AppTypography.caption(
+                    color: AppColors.textMuted,
+                  ).copyWith(fontSize: 10),
+                ),
+                if (policy.totalPaidAmount != null &&
+                    policy.totalPaidAmount! > 0)
+                  Text(
+                    'Paid: ${CurrencyFormatter.formatInr(policy.totalPaidAmount!)}',
+                    style: AppTypography.caption(
+                      color: AppColors.tertiaryFixed,
+                    ).copyWith(fontSize: 10, fontWeight: FontWeight.w600),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: LinearProgressIndicator(
+                value: ((policy.installmentsPaid ?? 0) / policy.tenureYears!)
+                    .clamp(0.0, 1.0),
+                minHeight: 4,
+                backgroundColor: AppColors.surface02,
+                valueColor: AlwaysStoppedAnimation<Color>(typeColor),
+              ),
+            ),
+          ],
+
           const SizedBox(height: 14),
 
           // Footer strip: Renewal Date · Premium
@@ -238,8 +310,11 @@ class InsurancePolicyCard extends StatelessWidget {
                     Text(
                       'Renewal: ${policy.renewalDueDate.day} ${_getMonthShort(policy.renewalDueDate.month)} ${policy.renewalDueDate.year}',
                       style: AppTypography.caption(
-                        color: AppColors.textMuted,
-                      ).copyWith(fontSize: 11),
+                        color: isOverdue ? AppColors.dangerCoral : AppColors.textMuted,
+                      ).copyWith(
+                        fontSize: 11,
+                        fontWeight: isOverdue ? FontWeight.w600 : FontWeight.w400,
+                      ),
                     ),
                   ],
                 ),
@@ -252,6 +327,69 @@ class InsurancePolicyCard extends StatelessWidget {
               ],
             ),
           ),
+
+          // Action Button: Record Payment
+          if (onRecordPaymentTap != null) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              height: 38,
+              child: ElevatedButton.icon(
+                onPressed: onRecordPaymentTap,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isOverdue
+                      ? AppColors.dangerCoral
+                      : isExpiringSoon
+                          ? AppColors.primaryFixed
+                          : AppColors.surface02,
+                  foregroundColor: isOverdue
+                      ? Colors.white
+                      : isExpiringSoon
+                          ? AppColors.canvasBase
+                          : AppColors.textPrimary,
+                  elevation: 0,
+                  side: BorderSide(
+                    color: isOverdue
+                        ? AppColors.dangerCoral
+                        : isExpiringSoon
+                            ? AppColors.primaryFixed
+                            : AppColors.ghostBorder,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                ),
+                icon: Icon(
+                  Icons.bolt_rounded,
+                  size: 16,
+                  color: isOverdue
+                      ? Colors.white
+                      : isExpiringSoon
+                          ? AppColors.canvasBase
+                          : AppColors.primaryFixed,
+                ),
+                label: Text(
+                  isOverdue
+                      ? 'Pay Overdue Premium'
+                      : isExpiringSoon
+                          ? 'Renew & Record Payment'
+                          : 'Record Premium Payment',
+                  style: TextStyle(
+                    fontFamily: 'SpaceGrotesk',
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.3,
+                    color: isOverdue
+                        ? Colors.white
+                        : isExpiringSoon
+                            ? AppColors.canvasBase
+                            : AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import '../models/family_member.dart';
 import '../models/insurance_policy_model.dart';
+import '../models/transaction_category.dart';
+import '../services/category_repository.dart';
 import '../services/family_repository.dart';
 import '../services/home_repository.dart';
 import '../services/insurance_repository.dart';
+import '../services/transaction_repository.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../widgets/insurance_policy_card.dart';
@@ -14,12 +17,16 @@ class InsuranceVaultScreen extends StatefulWidget {
   final HomeRepository repository;
   final InsuranceRepository? insuranceRepository;
   final FamilyRepository? familyRepository;
+  final TransactionRepository? transactionRepository;
+  final CategoryRepository? categoryRepository;
 
   const InsuranceVaultScreen({
     super.key,
     required this.repository,
     this.insuranceRepository,
     this.familyRepository,
+    this.transactionRepository,
+    this.categoryRepository,
   });
 
   @override
@@ -29,6 +36,8 @@ class InsuranceVaultScreen extends StatefulWidget {
 class _InsuranceVaultScreenState extends State<InsuranceVaultScreen> {
   late final InsuranceRepository _insuranceRepo;
   late final FamilyRepository _familyRepo;
+  late final TransactionRepository _transactionRepo;
+  late final CategoryRepository _categoryRepo;
 
   InsuranceVaultOverview? _lastLoadedOverview;
   bool _isLoading = true;
@@ -42,6 +51,9 @@ class _InsuranceVaultScreenState extends State<InsuranceVaultScreen> {
     super.initState();
     _insuranceRepo = widget.insuranceRepository ?? HttpInsuranceRepository();
     _familyRepo = widget.familyRepository ?? HttpFamilyRepository();
+    _transactionRepo =
+        widget.transactionRepository ?? HttpTransactionRepository();
+    _categoryRepo = widget.categoryRepository ?? HttpCategoryRepository();
     _loadFamilyMembers();
     _loadData();
   }
@@ -157,6 +169,497 @@ class _InsuranceVaultScreenState extends State<InsuranceVaultScreen> {
     }
   }
 
+  Future<void> _showRecordPaymentSheet(InsurancePolicyModel policy) async {
+    final paidAmountController = TextEditingController(
+      text: policy.premiumAmount.toStringAsFixed(0),
+    );
+    final nextPremiumController = TextEditingController(
+      text: policy.premiumAmount.toStringAsFixed(0),
+    );
+
+    DateTime paymentDate = DateTime.now();
+
+    // Default next renewal date: add cycle to current renewal date or today if already overdue
+    final now = DateTime.now();
+    DateTime baseDate = policy.renewalDueDate.isAfter(now)
+        ? policy.renewalDueDate
+        : now;
+
+    DateTime nextRenewalDate;
+    if (policy.premiumFrequency == 'MONTHLY') {
+      nextRenewalDate = DateTime(baseDate.year, baseDate.month + 1, baseDate.day);
+    } else if (policy.premiumFrequency == 'QUARTERLY') {
+      nextRenewalDate = DateTime(baseDate.year, baseDate.month + 3, baseDate.day);
+    } else {
+      nextRenewalDate = DateTime(baseDate.year + 1, baseDate.month, baseDate.day);
+    }
+
+    String selectedPayerMemberId = _familyMembers.isNotEmpty
+        ? _familyMembers.first.id
+        : policy.insuredMemberId;
+
+    bool logToExpenseLedger = true;
+    bool isSubmitting = false;
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+            return Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.88,
+              ),
+              decoration: const BoxDecoration(
+                color: AppColors.canvasBase,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Drag Handle
+                  Container(
+                    margin: const EdgeInsets.symmetric(vertical: 10),
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.surface02,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+
+                  // Sheet Header
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Record Premium Payment',
+                              style: AppTypography.headlineSm(
+                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.w700,
+                              ).copyWith(fontSize: 18),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${policy.policyName} · ${policy.insuredMemberName}',
+                              style: AppTypography.caption(
+                                color: AppColors.textMuted,
+                              ).copyWith(fontSize: 12),
+                            ),
+                          ],
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.of(ctx).pop(),
+                          icon: const Icon(Icons.close_rounded, color: AppColors.textMuted),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const Divider(color: AppColors.ghostBorder, height: 16),
+
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.fromLTRB(20, 8, 20, bottomInset + 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Notice banner about variable premiums
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: AppColors.surface01,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: AppColors.primaryFixed.withValues(alpha: 0.25),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.info_outline_rounded,
+                                  color: AppColors.primaryFixed,
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Premiums can be variable. Enter the actual renewal amount paid this cycle.',
+                                    style: AppTypography.caption(
+                                      color: AppColors.textPrimary,
+                                    ).copyWith(fontSize: 11),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // 1. Amount Paid & Paid Date
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildInputField(
+                                  controller: paidAmountController,
+                                  label: 'AMOUNT PAID (₹)',
+                                  hintText: 'e.g. 15000',
+                                  keyboardType: TextInputType.number,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'PAYMENT DATE',
+                                      style: AppTypography.labelSm(
+                                        color: AppColors.textMuted,
+                                        fontWeight: FontWeight.w700,
+                                      ).copyWith(fontSize: 10),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    InkWell(
+                                      onTap: () async {
+                                        final picked = await showDatePicker(
+                                          context: context,
+                                          initialDate: paymentDate,
+                                          firstDate: DateTime(2020),
+                                          lastDate: DateTime.now().add(const Duration(days: 30)),
+                                        );
+                                        if (picked != null) {
+                                          setSheetState(() => paymentDate = picked);
+                                        }
+                                      },
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 12,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.surface01,
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(
+                                            color: AppColors.ghostBorder,
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              '${paymentDate.day}/${paymentDate.month}/${paymentDate.year}',
+                                              style: AppTypography.bodySm(
+                                                color: AppColors.textPrimary,
+                                              ),
+                                            ),
+                                            const Icon(
+                                              Icons.calendar_month_outlined,
+                                              size: 16,
+                                              color: AppColors.textMuted,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // 2. Paid By Member
+                          Text(
+                            'PAID BY (MEMBER ACCOUNT)',
+                            style: AppTypography.labelSm(
+                              color: AppColors.textMuted,
+                              fontWeight: FontWeight.w700,
+                            ).copyWith(fontSize: 10),
+                          ),
+                          const SizedBox(height: 8),
+                          if (_familyMembers.isNotEmpty)
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: _familyMembers.map((m) {
+                                final isSelected = selectedPayerMemberId == m.id;
+                                return ChoiceChip(
+                                  label: Text(m.name),
+                                  selected: isSelected,
+                                  onSelected: (val) {
+                                    if (val) {
+                                      setSheetState(() => selectedPayerMemberId = m.id);
+                                    }
+                                  },
+                                  selectedColor: AppColors.primaryFixed,
+                                  backgroundColor: AppColors.surface01,
+                                  labelStyle: TextStyle(
+                                    color: isSelected
+                                        ? AppColors.canvasBase
+                                        : AppColors.textPrimary,
+                                    fontWeight: isSelected
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
+                                    fontSize: 12,
+                                  ),
+                                );
+                              }).toList(),
+                            )
+                          else
+                            Text(
+                              policy.insuredMemberName,
+                              style: AppTypography.bodySm(color: AppColors.textPrimary),
+                            ),
+
+                          const SizedBox(height: 16),
+
+                          // 3. Next Renewal Due Date & Next Expected Premium
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'NEXT RENEWAL DATE',
+                                      style: AppTypography.labelSm(
+                                        color: AppColors.textMuted,
+                                        fontWeight: FontWeight.w700,
+                                      ).copyWith(fontSize: 10),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    InkWell(
+                                      onTap: () async {
+                                        final picked = await showDatePicker(
+                                          context: context,
+                                          initialDate: nextRenewalDate,
+                                          firstDate: DateTime.now(),
+                                          lastDate: DateTime(2045),
+                                        );
+                                        if (picked != null) {
+                                          setSheetState(() => nextRenewalDate = picked);
+                                        }
+                                      },
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 12,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.surface01,
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(
+                                            color: AppColors.ghostBorder,
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              '${nextRenewalDate.day}/${nextRenewalDate.month}/${nextRenewalDate.year}',
+                                              style: AppTypography.bodySm(
+                                                color: AppColors.primaryFixed,
+                                              ).copyWith(fontWeight: FontWeight.w600),
+                                            ),
+                                            const Icon(
+                                              Icons.calendar_today_outlined,
+                                              size: 16,
+                                              color: AppColors.textMuted,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _buildInputField(
+                                  controller: nextPremiumController,
+                                  label: 'NEXT CYCLE PREMIUM (₹)',
+                                  hintText: 'e.g. 15000',
+                                  keyboardType: TextInputType.number,
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 18),
+
+                          // 4. Ledger Checkbox
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: AppColors.surface02,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                Checkbox(
+                                  value: logToExpenseLedger,
+                                  activeColor: AppColors.primaryFixed,
+                                  checkColor: AppColors.canvasBase,
+                                  onChanged: (val) {
+                                    setSheetState(() => logToExpenseLedger = val ?? true);
+                                  },
+                                ),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Log to Family Expenses',
+                                        style: AppTypography.bodySm(
+                                          color: AppColors.textPrimary,
+                                        ).copyWith(fontWeight: FontWeight.w600),
+                                      ),
+                                      Text(
+                                        'Syncs ₹${paidAmountController.text} outflow with Family Spent and Insights',
+                                        style: AppTypography.caption(
+                                          color: AppColors.textMuted,
+                                        ).copyWith(fontSize: 10),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 24),
+
+                          // Submit Button
+                          SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: ElevatedButton(
+                              onPressed: isSubmitting
+                                  ? null
+                                  : () async {
+                                      final paidAmount = double.tryParse(paidAmountController.text.trim());
+                                      if (paidAmount == null || paidAmount <= 0) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('Please enter a valid amount paid')),
+                                        );
+                                        return;
+                                      }
+
+                                      final nextPremium = double.tryParse(nextPremiumController.text.trim()) ?? paidAmount;
+
+                                      setSheetState(() => isSubmitting = true);
+
+                                      final nav = Navigator.of(ctx);
+                                      final messenger = ScaffoldMessenger.of(context);
+
+                                      try {
+                                        // 1. Update Policy via PATCH /api/v1/insurance/{id}
+                                        await _insuranceRepo.updatePolicy(policy.id, {
+                                          'premium_amount': nextPremium,
+                                          'renewal_due_date': nextRenewalDate.toIso8601String().split('T').first,
+                                          'status': 'ACTIVE',
+                                        });
+
+                                        // 2. Optionally create real expense transaction via POST /api/v1/transactions
+                                        if (logToExpenseLedger) {
+                                          try {
+                                            final categories = await _categoryRepo.getCategories(type: 'EXPENSE');
+                                            final insuranceCat = categories.firstWhere(
+                                              (c) => c.name.toLowerCase().contains('insurance'),
+                                              orElse: () => categories.isNotEmpty
+                                                  ? categories.first
+                                                  : TransactionCategory.defaultCategories.first,
+                                            );
+
+                                            await _transactionRepo.createTransaction(
+                                              type: 'EXPENSE',
+                                              amount: paidAmount,
+                                              title: 'Insurance Renewal · ${policy.policyName}',
+                                              categoryId: insuranceCat.id,
+                                              paidByMemberId: selectedPayerMemberId,
+                                              beneficiaryMemberId: policy.insuredMemberId,
+                                              transactionDate: paymentDate,
+                                              paymentMode: 'UPI',
+                                              notes: 'Policy renewed until ${nextRenewalDate.day}/${nextRenewalDate.month}/${nextRenewalDate.year}',
+                                            );
+                                          } catch (_) {
+                                            // Non-blocking if ledger fails
+                                          }
+                                        }
+
+                                        nav.pop();
+                                        messenger.showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              'Renewal recorded for ${policy.policyName}! Next due: ${nextRenewalDate.day}/${nextRenewalDate.month}/${nextRenewalDate.year}',
+                                            ),
+                                            backgroundColor: AppColors.surface02,
+                                          ),
+                                        );
+                                        _loadData(silent: true);
+                                      } catch (err) {
+                                        setSheetState(() => isSubmitting = false);
+                                        messenger.showSnackBar(
+                                          SnackBar(
+                                            content: Text('Failed to update policy: $err'),
+                                            backgroundColor: AppColors.dangerCoral,
+                                          ),
+                                        );
+                                      }
+                                    },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primaryFixed,
+                                foregroundColor: AppColors.canvasBase,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
+                              child: isSubmitting
+                                  ? const SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: AppColors.canvasBase,
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Confirm & Record Payment',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 14,
+                                        letterSpacing: 0.3,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   void _showAddPolicySheet() {
     String? selectedMemberId =
         _familyMembers.isNotEmpty ? _familyMembers.first.id : null;
@@ -168,6 +671,8 @@ class _InsuranceVaultScreenState extends State<InsuranceVaultScreen> {
     final numberController = TextEditingController();
     final sumAssuredController = TextEditingController();
     final premiumController = TextEditingController();
+    final tenureController = TextEditingController(text: '1');
+    final installmentsPaidController = TextEditingController(text: '0');
 
     bool isSubmitting = false;
 
@@ -480,6 +985,31 @@ class _InsuranceVaultScreenState extends State<InsuranceVaultScreen> {
                                 ),
                               ),
                             ],
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    // 7. Policy Tenure & Past History (Optional)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildInputField(
+                            controller: tenureController,
+                            label: 'POLICY TERM (YEARS)',
+                            hintText: 'e.g. 1, 10, 20',
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildInputField(
+                            controller: installmentsPaidController,
+                            label: 'YEARS ALREADY PAID',
+                            hintText: '0 if new, 3 if paid 3 yrs',
+                            keyboardType: TextInputType.number,
                           ),
                         ),
                       ],
@@ -856,6 +1386,7 @@ class _InsuranceVaultScreenState extends State<InsuranceVaultScreen> {
                   return InsurancePolicyCard(
                     policy: policy,
                     onDeleteTap: () => _deletePolicy(policy),
+                    onRecordPaymentTap: () => _showRecordPaymentSheet(policy),
                   );
                 },
               ),
