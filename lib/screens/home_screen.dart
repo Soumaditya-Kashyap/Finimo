@@ -266,6 +266,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         MaterialPageRoute(
                           builder: (ctx) => InsuranceVaultScreen(
                             repository: widget.repository,
+                            familyRepository: _familyRepo,
                           ),
                         ),
                       );

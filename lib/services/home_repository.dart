@@ -519,7 +519,6 @@ class MockHomeRepository implements HomeRepository {
 
   @override
   Future<InsuranceVaultOverview> getInsuranceVaultOverview() async {
-    // TODO: Replace mock data with real API call to GET /api/v1/insurance
     return InsuranceVaultOverview(
       totalSumAssuredUmbrella: 12500000.0,
       formattedUmbrellaText: '₹1.25 Cr',
@@ -528,7 +527,6 @@ class MockHomeRepository implements HomeRepository {
       monthlyCostEquivalent: 2875.0,
       nextCycleText: "Nov '26",
       nextCycleStatus: 'Auto-Funded',
-      activeClaimsCount: 0,
       policies: [
         InsurancePolicyModel(
           id: 'pol_hdfc_term',
@@ -543,14 +541,12 @@ class MockHomeRepository implements HomeRepository {
           premiumFrequency: 'ANNUAL',
           renewalDueDate: DateTime(2026, 11, 18),
           status: PolicyStatus.active,
-          nomineeName: 'Chandrani (Spouse)',
-          subDetailText: 'Next: 18 Nov 2026 · ₹18,500/yr',
         ),
         InsurancePolicyModel(
           id: 'pol_care_supreme',
           familyId: 'fam_roy',
           insuredMemberId: 'm_family',
-          insuredMemberName: '3 Covered',
+          insuredMemberName: 'Family Members',
           policyName: 'Care Supreme Comprehensive',
           policyType: PolicyType.health,
           policyNumber: 'CARE-449102',
@@ -559,14 +555,12 @@ class MockHomeRepository implements HomeRepository {
           premiumFrequency: 'ANNUAL',
           renewalDueDate: DateTime(2027, 3, 15),
           status: PolicyStatus.active,
-          nomineeName: 'Arpa, Chandrani & Aryahi',
-          subDetailText: '14,000+ Cashless Hospitals · Zero Room Cap',
         ),
         InsurancePolicyModel(
           id: 'pol_tata_aig_creta',
           familyId: 'fam_roy',
           insuredMemberId: 'asset_creta',
-          insuredMemberName: 'Creta · AS-01-EF-4291',
+          insuredMemberName: 'Vehicle · Creta',
           policyName: 'Tata AIG Comprehensive Cover',
           policyType: PolicyType.auto,
           policyNumber: 'TATA-MOTOR-8812',
@@ -575,11 +569,6 @@ class MockHomeRepository implements HomeRepository {
           premiumFrequency: 'ANNUAL',
           renewalDueDate: DateTime(2026, 11, 7),
           status: PolicyStatus.pendingRenewal,
-          nomineeName: 'Zero Depreciation + B2B Engine Guard',
-          subDetailText: 'Action Required · Expiry in 12 days',
-          isActionRequired: true,
-          expiryDaysLeft: 12,
-          sinkingFundBalance: 12000.0,
         ),
       ],
     );
