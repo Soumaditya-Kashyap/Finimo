@@ -5,10 +5,10 @@ import 'package:finimo/core/app_version.dart';
 void main() {
   group('AppVersion Configuration Tests', () {
     test('AppVersion constants have valid semantic versioning', () {
-      expect(AppVersion.versionName, '1.1.1');
+      expect(AppVersion.versionName, '1.1.2');
       expect(AppVersion.buildNumber, 1);
-      expect(AppVersion.displayVersion, 'FINIMO v1.1.1');
-      expect(AppVersion.fullVersion, 'v1.1.1+1');
+      expect(AppVersion.displayVersion, 'FINIMO v1.1.2');
+      expect(AppVersion.fullVersion, 'v1.1.2+1');
       expect(AppVersion.appPhase, 'Phase 1 MVP');
     });
 
