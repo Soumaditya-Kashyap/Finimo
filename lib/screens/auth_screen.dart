@@ -245,18 +245,9 @@ class _AuthScreenState extends State<AuthScreen> {
 
               const SizedBox(height: 18),
 
-              // Password Field with "Forgot Password?"
+              // Password Field
               AuthTextField(
                 label: 'PASSWORD',
-                rightLabel: 'Forgot Password?',
-                onRightLabelTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Password reset link sent to your email'),
-                      duration: Duration(seconds: 1),
-                    ),
-                  );
-                },
                 hintText: 'Enter your password',
                 controller: _passwordController,
                 prefixIcon: Icons.lock_outline_rounded,
@@ -276,8 +267,6 @@ class _AuthScreenState extends State<AuthScreen> {
                   },
                 ),
               ),
-
-
 
               const SizedBox(height: 22),
 
@@ -331,7 +320,36 @@ class _AuthScreenState extends State<AuthScreen> {
                 ),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
+
+              // Forgot Password link below Log In
+              Center(
+                child: GestureDetector(
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Password reset link sent to your email'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 4, horizontal: 8),
+                    child: Text(
+                      'Forgot Password?',
+                      style: AppTypography.caption(
+                        color: AppColors.textMuted,
+                      ).copyWith(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 20),
 
               // Divider "OR SECURE ACCESS WITH"
               Row(
