@@ -408,6 +408,9 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
     final topPadding = mediaQuery.padding.top;
     final topOffset = topPadding + 36.0;
     final bottomInset = mediaQuery.viewInsets.bottom;
+    final systemBottomPadding = mediaQuery.viewPadding.bottom > 0
+        ? mediaQuery.viewPadding.bottom
+        : mediaQuery.padding.bottom;
 
     final isExpense = _selectedType == TransactionType.expense;
     final accentColor = widget.isEventExpenseOnly
@@ -428,8 +431,12 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
             ),
           ],
         ),
-        child: Column(
-          children: [
+        child: Padding(
+          padding: EdgeInsets.only(
+            bottom: bottomInset > 0 ? 0 : systemBottomPadding,
+          ),
+          child: Column(
+            children: [
             // Drag Handle & Top Header
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
@@ -526,7 +533,7 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
                       SingleChildScrollView(
                         controller: _scrollController,
                         physics: const ClampingScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
+                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
                         child: Column(
                           children: [
                             // 1. Segmented Expense / Income Switch (Hidden for Event Expense)
@@ -807,6 +814,7 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

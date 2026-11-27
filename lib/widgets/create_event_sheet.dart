@@ -146,12 +146,19 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
         ? '${_endDate!.day.toString().padLeft(2, '0')}/${_endDate!.month.toString().padLeft(2, '0')}/${_endDate!.year}'
         : 'Select end date (optional)';
 
+    final systemBottom = MediaQuery.viewPaddingOf(context).bottom > 0
+        ? MediaQuery.viewPaddingOf(context).bottom
+        : MediaQuery.paddingOf(context).bottom;
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final effectiveBottom =
+        bottomInset > 0 ? bottomInset + 16 : systemBottom + 24;
+
     return Padding(
       padding: EdgeInsets.only(
-        bottom: MediaQuery.viewInsetsOf(context).bottom,
+        bottom: bottomInset > 0 ? bottomInset : 0,
       ),
       child: Container(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+        padding: EdgeInsets.fromLTRB(20, 12, 20, effectiveBottom),
         decoration: const BoxDecoration(
           color: AppColors.canvasBase,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),

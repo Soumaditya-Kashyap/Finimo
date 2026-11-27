@@ -324,79 +324,84 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) {
+        final systemBottom = MediaQuery.viewPaddingOf(ctx).bottom > 0
+            ? MediaQuery.viewPaddingOf(ctx).bottom
+            : MediaQuery.paddingOf(ctx).bottom;
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Whose View?',
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
+          padding: EdgeInsets.fromLTRB(20, 24, 20, 20 + systemBottom),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Whose View?',
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const CircleAvatar(
-                  backgroundColor: AppColors.surface03,
-                  child: Icon(Icons.group, color: AppColors.primaryFixed),
-                ),
-                title: const Text(
-                  'Family (All)',
-                  style: TextStyle(color: AppColors.textPrimary),
-                ),
-                trailing: _selectedFamilyScope == 'Family (All)'
-                    ? const Icon(Icons.check, color: AppColors.primaryFixed)
-                    : null,
-                onTap: () {
-                  setState(() {
-                    _selectedFamilyScope = 'Family (All)';
-                    _selectedMemberId = null;
-                  });
-                  Navigator.pop(ctx);
-                  _loadData(selectedMemberId: null);
-                },
-              ),
-              ...members.map(
-                (m) => ListTile(
+                const SizedBox(height: 16),
+                ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: CircleAvatar(
-                    backgroundColor: AppColors.surface02,
-                    child: Text(
-                      m.initial,
-                      style: const TextStyle(
-                        color: AppColors.secondary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                  leading: const CircleAvatar(
+                    backgroundColor: AppColors.surface03,
+                    child: Icon(Icons.group, color: AppColors.primaryFixed),
                   ),
-                  title: Text(
-                    m.name,
-                    style: const TextStyle(color: AppColors.textPrimary),
+                  title: const Text(
+                    'Family (All)',
+                    style: TextStyle(color: AppColors.textPrimary),
                   ),
-                  subtitle: Text(
-                    m.relationType.name.toUpperCase(),
-                    style: const TextStyle(
-                        color: AppColors.textMuted, fontSize: 11),
-                  ),
-                  trailing: _selectedFamilyScope == m.name
+                  trailing: _selectedFamilyScope == 'Family (All)'
                       ? const Icon(Icons.check, color: AppColors.primaryFixed)
                       : null,
                   onTap: () {
                     setState(() {
-                      _selectedFamilyScope = m.name;
-                      _selectedMemberId = m.id;
+                      _selectedFamilyScope = 'Family (All)';
+                      _selectedMemberId = null;
                     });
                     Navigator.pop(ctx);
-                    _loadData(selectedMemberId: m.id);
+                    _loadData(selectedMemberId: null);
                   },
                 ),
-              ),
-            ],
+                ...members.map(
+                  (m) => ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: CircleAvatar(
+                      backgroundColor: AppColors.surface02,
+                      child: Text(
+                        m.initial,
+                        style: const TextStyle(
+                          color: AppColors.secondary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    title: Text(
+                      m.name,
+                      style: const TextStyle(color: AppColors.textPrimary),
+                    ),
+                    subtitle: Text(
+                      m.relationType.name.toUpperCase(),
+                      style: const TextStyle(
+                          color: AppColors.textMuted, fontSize: 11),
+                    ),
+                    trailing: _selectedFamilyScope == m.name
+                        ? const Icon(Icons.check, color: AppColors.primaryFixed)
+                        : null,
+                    onTap: () {
+                      setState(() {
+                        _selectedFamilyScope = m.name;
+                        _selectedMemberId = m.id;
+                      });
+                      Navigator.pop(ctx);
+                      _loadData(selectedMemberId: m.id);
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },

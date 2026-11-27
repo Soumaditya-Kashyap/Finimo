@@ -29,7 +29,10 @@ class FinimoBottomNavBar extends StatelessWidget {
             ),
           ),
           padding: EdgeInsets.only(
-            bottom: MediaQuery.paddingOf(context).bottom + 4,
+            bottom: (MediaQuery.viewPaddingOf(context).bottom > 0
+                    ? MediaQuery.viewPaddingOf(context).bottom
+                    : MediaQuery.paddingOf(context).bottom) +
+                4,
             top: 10,
           ),
           child: Row(

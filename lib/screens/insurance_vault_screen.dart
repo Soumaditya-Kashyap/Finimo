@@ -209,6 +209,11 @@ class _InsuranceVaultScreenState extends State<InsuranceVaultScreen> {
         return StatefulBuilder(
           builder: (context, setSheetState) {
             final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+            final systemBottom = MediaQuery.viewPaddingOf(context).bottom > 0
+                ? MediaQuery.viewPaddingOf(context).bottom
+                : MediaQuery.paddingOf(context).bottom;
+            final effectiveBottomPadding =
+                bottomInset > 0 ? bottomInset + 16 : systemBottom + 24;
             return Container(
               constraints: BoxConstraints(
                 maxHeight: MediaQuery.of(context).size.height * 0.88,
@@ -268,7 +273,7 @@ class _InsuranceVaultScreenState extends State<InsuranceVaultScreen> {
 
                   Expanded(
                     child: SingleChildScrollView(
-                      padding: EdgeInsets.fromLTRB(20, 8, 20, bottomInset + 24),
+                      padding: EdgeInsets.fromLTRB(20, 8, 20, effectiveBottomPadding),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -686,12 +691,18 @@ class _InsuranceVaultScreenState extends State<InsuranceVaultScreen> {
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
+            final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+            final systemBottom = MediaQuery.viewPaddingOf(context).bottom > 0
+                ? MediaQuery.viewPaddingOf(context).bottom
+                : MediaQuery.paddingOf(context).bottom;
+            final effectiveBottomPadding =
+                bottomInset > 0 ? bottomInset + 16 : systemBottom + 24;
             return Padding(
               padding: EdgeInsets.only(
                 left: 20,
                 right: 20,
                 top: 20,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+                bottom: effectiveBottomPadding,
               ),
               child: SingleChildScrollView(
                 child: Column(
