@@ -307,6 +307,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     items: data.recentFlows,
                     onSeeLedgerTap: widget.onSeeLedgerTap,
                   ),
+                  const SizedBox(height: 100),
                 ],
               ),
             ),
