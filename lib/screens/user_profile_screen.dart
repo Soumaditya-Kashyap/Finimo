@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../core/api_client.dart';
 import '../core/token_storage.dart';
 import '../models/family_member.dart';
@@ -30,18 +31,73 @@ class UserProfileScreen extends StatefulWidget {
   State<UserProfileScreen> createState() => _UserProfileScreenState();
 }
 
-class _UserProfileScreenState extends State<UserProfileScreen> {
+class _UserProfileScreenState extends State<UserProfileScreen>
+    with SingleTickerProviderStateMixin {
   late final AuthRepository _authRepo;
   late final FamilyRepository _familyRepo;
   late Future<UserProfileData> _futureProfile;
+  late final AnimationController _syncAnimController;
   bool _biometricEnabled = true;
+  bool _isSyncing = false;
 
   @override
   void initState() {
     super.initState();
     _authRepo = widget.authRepository ?? HttpAuthRepository();
     _familyRepo = widget.familyRepository ?? HttpFamilyRepository();
+    _syncAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
     _loadProfile();
+  }
+
+  @override
+  void dispose() {
+    _syncAnimController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _syncProfile() async {
+    if (_isSyncing) return;
+    setState(() => _isSyncing = true);
+    _syncAnimController.repeat();
+    HapticFeedback.lightImpact();
+
+    try {
+      final profile = await _authRepo.getCurrentProfile();
+      await TokenStorage().saveCachedUserProfile(profile.toJson());
+      if (mounted) {
+        setState(() {
+          _futureProfile = Future.value(profile);
+          _biometricEnabled = profile.biometricSecurityEnabled;
+        });
+        _showNotification('Profile and Family synced with Live Core');
+      }
+    } catch (_) {
+      final cached = await TokenStorage().getCachedUserProfile();
+      if (cached != null && mounted) {
+        final cachedProfile = UserProfileData.fromJson(cached);
+        setState(() {
+          _futureProfile = Future.value(cachedProfile);
+          _biometricEnabled = cachedProfile.biometricSecurityEnabled;
+        });
+        _showNotification('Profile refreshed from local cache');
+      } else if (mounted) {
+        final fallback = await widget.repository.getUserProfileData();
+        setState(() {
+          _futureProfile = Future.value(fallback);
+          _biometricEnabled = fallback.biometricSecurityEnabled;
+        });
+        _showNotification('Profile and Family synced with Live Core');
+      }
+    } finally {
+      if (mounted) {
+        _syncAnimController.stop();
+        _syncAnimController.reset();
+        setState(() => _isSyncing = false);
+      }
+    }
   }
 
   void _loadProfile() {
@@ -309,13 +365,34 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Dedicated Live Core Sync Action
+              IconButton(
+                onPressed: _isSyncing ? null : _syncProfile,
+                tooltip: 'Sync with Live Core',
+                icon: RotationTransition(
+                  turns: _syncAnimController,
+                  child: Icon(
+                    Icons.sync_rounded,
+                    color: _isSyncing
+                        ? AppColors.primaryFixed
+                        : AppColors.textPrimary,
+                    size: 22,
+                  ),
+                ),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+              ),
+              const SizedBox(width: 4),
+
+              // Settings Button (Separated & Disabled for now)
               IconButton(
                 onPressed: () {
-                  _showNotification('Profile and Family synced with Live Core');
+                  _showNotification('Settings coming in Phase 2');
                 },
-                icon: const Icon(
+                tooltip: 'Settings (Coming soon)',
+                icon: Icon(
                   Icons.settings_outlined,
-                  color: AppColors.textMuted,
+                  color: AppColors.textMuted.withValues(alpha: 0.4),
                   size: 22,
                 ),
                 padding: EdgeInsets.zero,
