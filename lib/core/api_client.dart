@@ -33,9 +33,11 @@ class ApiClient {
   })  : tokenStorage = tokenStorage ?? TokenStorage(),
         _httpClient = httpClient ?? http.Client();
 
-  Uri _buildUri(String path, [Map<String, dynamic>? queryParameters]) {
+  Uri _buildUri(String path,
+      [Map<String, dynamic>? queryParameters, String? customBaseUrl]) {
     final cleanPath = path.startsWith('/') ? path : '/$path';
-    final fullUrl = '${ApiConfig.baseUrl}$cleanPath';
+    final root = customBaseUrl ?? ApiConfig.baseUrl;
+    final fullUrl = '$root$cleanPath';
     final uri = Uri.parse(fullUrl);
 
     if (queryParameters != null && queryParameters.isNotEmpty) {
@@ -78,10 +80,40 @@ class ApiClient {
       response = await _executeRaw(method, uri, headers, body);
     } catch (e) {
       if (e is ApiException) rethrow;
-      throw ApiException(
-        statusCode: 0,
-        message: 'Network connection failed: $e',
-      );
+
+      // Resilient Fallback: If DNS resolution or host lookup fails on primary endpoint
+      // (common on mobile networks/ISPs blocking *.sslip.io wildcard domains),
+      // retry transparently with direct IP fallback URL.
+      final errStr = e.toString();
+      final isHostLookupFailure = errStr.contains('Failed host lookup') ||
+          errStr.contains('SocketException') ||
+          errStr.contains('Connection refused');
+
+      if (isHostLookupFailure &&
+          ApiConfig.fallbackBaseUrl.isNotEmpty &&
+          !uri.toString().startsWith(ApiConfig.fallbackBaseUrl)) {
+        try {
+          final fallbackUri = _buildUri(
+            path,
+            queryParameters,
+            ApiConfig.fallbackBaseUrl,
+          );
+          response = await _executeRaw(method, fallbackUri, headers, body);
+        } catch (_) {
+          throw ApiException(
+            statusCode: 0,
+            message:
+                'Unable to connect to FINIMO server. Please check your internet connection.',
+          );
+        }
+      } else {
+        throw ApiException(
+          statusCode: 0,
+          message: isHostLookupFailure
+              ? 'Unable to connect to FINIMO server. Please check your internet connection.'
+              : 'Network connection failed: $e',
+        );
+      }
     }
 
     // Auto-refresh token if 401 Unauthorized and not already calling refresh

@@ -12,6 +12,12 @@ class ApiConfig {
     defaultValue: 'https://8000.13.233.93.251.sslip.io',
   );
 
+  /// Resilient fallback backend URL (Direct IP:Port if ISP DNS blocks *.sslip.io)
+  static const String fallbackBaseUrl = String.fromEnvironment(
+    'API_FALLBACK_BASE_URL',
+    defaultValue: 'http://13.233.93.251:8000',
+  );
+
   static const String apiVersion = '/api/v1';
 
   // Request timeout duration (30s for resilient mobile 4G/5G handoffs)
