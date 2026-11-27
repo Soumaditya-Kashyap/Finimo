@@ -201,6 +201,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   FamilyOrbitSelector(
                     members: data.members,
                     selectedLabel: _selectedFamilyScope,
+                    selectedMemberId: _selectedMemberId,
                     onTap: () => _showFamilySelectorSheet(data.members),
                   ),
 
